@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_LSqDeltaCalibration/templates *
+recursive-include octoprint_LSqDeltaCalibration/translations *
+recursive-include octoprint_LSqDeltaCalibration/static *
