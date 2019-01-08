@@ -13,48 +13,68 @@ import octoprint.plugin
 
 class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
                                 octoprint.plugin.AssetPlugin,
-                                octoprint.plugin.TemplatePlugin):
+                                octoprint.plugin.TemplatePlugin,
+								octoprint.plugin.SimpleApiPlugin):
 
-	##~~ SettingsPlugin mixin
+    ##~~ SettingsPlugin mixin
 
-	def get_settings_defaults(self):
-		return dict(
-			# put your plugin's default settings here
-			url="https://en.wikipedia.org/wiki/Hello_world"
-		)
+    def get_settings_defaults(self):
+        return dict(
+            # put your plugin's default settings here
+            url="https://en.wikipedia.org/wiki/Hello_world"
+        )
 
-	##~~ AssetPlugin mixin
+    ##~~ AssetPlugin mixin
 
-	def get_assets(self):
-		# Define your plugin's asset files to automatically include in the
-		# core UI here.
-		return dict(
-			js=["js/LSqDeltaCalibration.js"],
-			css=["css/LSqDeltaCalibration.css"],
-			less=["less/LSqDeltaCalibration.less"]
-		)
+    def get_assets(self):
+        # Define your plugin's asset files to automatically include in the
+        # core UI here.
+        return dict(
+            js=["js/LSqDeltaCalibration.js"],
+            css=["css/LSqDeltaCalibration.css"],
+            less=["less/LSqDeltaCalibration.less"]
+        )
 
-	##~~ Softwareupdate hook
+    ##~~ Softwareupdate hook
 
-	def get_update_information(self):
-		# Define the configuration for your plugin to use with the Software Update
-		# Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
-		# for details.
-		return dict(
-			LSqDeltaCalibration=dict(
-				displayName="Lsqdeltacalibration Plugin",
-				displayVersion=self._plugin_version,
+    def get_update_information(self):
+        # Define the configuration for your plugin to use with the Software Update
+        # Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
+        # for details.
+        return dict(
+            LSqDeltaCalibration=dict(
+                displayName="Lsqdeltacalibration Plugin",
+                displayVersion=self._plugin_version,
 
-				# version check: github repository
-				type="github_release",
-				user="Fabi0San",
-				repo="OctoPrint-LSqDeltaCalibration",
-				current=self._plugin_version,
+                # version check: github repository
+                type="github_release",
+                user="Fabi0San",
+                repo="OctoPrint-LSqDeltaCalibration",
+                current=self._plugin_version,
 
-				# update method: pip
-				pip="https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration/archive/{target_version}.zip"
-			)
-		)
+                # update method: pip
+                pip="https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration/archive/{target_version}.zip"
+            )
+        )
+
+    def get_api_commands(self):
+        return dict(
+            command1=[],
+            command2=["some_parameter"]
+        )
+
+    def on_api_command(self, command, data):
+        import flask
+        if command == "command1":
+            parameter = "unset"
+            if "parameter" in data:
+                parameter = "set"
+            self._logger.info("command1 called, parameter is {parameter}".format(**locals()))
+        elif command == "command2":
+            self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
+
+    def on_api_get(self, request):
+        return flask.jsonify(foo="bar")
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
@@ -63,11 +83,11 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
 __plugin_name__ = "Delta Calibration"
 
 def __plugin_load__():
-	global __plugin_implementation__
-	__plugin_implementation__ = LsqdeltacalibrationPlugin()
+    global __plugin_implementation__
+    __plugin_implementation__ = LsqdeltacalibrationPlugin()
 
-	global __plugin_hooks__
-	__plugin_hooks__ = {
-		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
-	}
+    global __plugin_hooks__
+    __plugin_hooks__ = {
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+    }
 

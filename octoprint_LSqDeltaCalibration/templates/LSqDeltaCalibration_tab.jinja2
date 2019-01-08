@@ -1,4 +1,4 @@
-<form id="form_plugin_LSQ_Delta" class="form-horizontal">
+<form id="tab_plugin_LSqDeltaCalibration" class="form-horizontal">
   <ul class="nav nav-pills">
     <li class="active">
       <a href="#current_geometry" data-toggle="tab">{{ _('Current Geometry') }}</a>
@@ -8,38 +8,39 @@
     </li>
     <li data-bind="Xvisible: printerAbl()" class="correction_preview">
       <a href="#settings_able_mp" data-toggle="tab">
-        <div data-bind="click: correctionPreview()">{{ _('Probe Points') }}      </div>
+        <div data-bind="sclick: correctionPreview()">{{ _('Probe Points') }}</div>
       </a>
     </li>
   </ul>
 
-  <div class="tab-content" style="width:100">
+  <div class="tab-content">
     <div id="current_geometry" class="tab-pane active">
-      <div data-bind="visible: !printerOnline()" class="message warning">
+      <div data-bind="xvisible: !printerOnline()" class="message warning">
         {{ _('Please connect your printer to get its capabilities') }}
       </div>
-        <div class="control-group">
-          <label class="control-label">{{ _('Steps per mm') }}</label>
-          <div class="controls" style="width:100%">
-            <table>
-              <tr>
-                <td style="text-align:center"><h4>X</h4></td><td style="text-align:center"><h4>Y</h4></td><td style="text-align:center"><h4>Z</h4></td>
-              </tr>
-              <tr>
-                <td>
-                <input type="number" data-bind="value: pluginSettings.probe_offset" step="0.1"/>
-                </td>
-                <td>
-            <input type="number" data-bind="value: pluginSettings.probe_offset" step="0.1"/>
-                </td>
-                <td>
-            <input type="number" data-bind="value: pluginSettings.probe_offset" step="0.1"/>
-                </td>
-              </tr>
-            </table>
-            <span class="help-inline">Height difference in millimeters between the probe detection and the nozzle. This is stored in printer via M851 gcode command</span>
-          </div>
+      <div class="control-group">
+      <label class="control-label">{{ _('Steps per mm') }}</label>
+        <div class="controls">
+          <table>
+            <tr>
+              <td>
+                X: <span data-bind="text: geometry().Prop">dd</span>
+              </td>
+              <td><input type="text" data-bind="value: geometry().str" step="0.1" style="width:90px"/>
+              </td>
+              <td>Y:</td>
+              <td>
+                <input type="number" step="0.1" style="width:90px"/>
+              </td>
+              <td>Z:</td>
+              <td>
+                <input type="number" step="0.1" style="width:90px"/>
+              </td>
+            </tr>
+          </table>
+          <span class="help-inline">Steps per millimiter, affected by belt strech.</span>
         </div>
+      </div>
     </div>
   </div>
 </form>

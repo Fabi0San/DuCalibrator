@@ -10,7 +10,9 @@ $(function() {
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
-        // self.settingsViewModel = parameters[1];
+        self.settingsViewModel = parameters[0];
+
+        self.geometry = ko.observable({Prop : 5, str : "aa"});
 
         // TODO: Implement your plugin's view model here.
     }
@@ -22,8 +24,8 @@ $(function() {
     OCTOPRINT_VIEWMODELS.push({
         construct: LsqdeltacalibrationViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
-        dependencies: [ /* "loginStateViewModel", "settingsViewModel" */ ],
+        dependencies: [ /* "loginStateViewModel", */ "settingsViewModel" ],
         // Elements to bind to, e.g. #settings_plugin_LSqDeltaCalibration, #tab_plugin_LSqDeltaCalibration, ...
-        elements: [ /* ... */ ]
+        elements: [ "#tab_plugin_LSqDeltaCalibration" ]
     });
 });
