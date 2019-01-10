@@ -17,6 +17,22 @@ $(function() {
         // TODO: Implement your plugin's view model here.
     }
 
+    function request(type, command, args, successCb) {
+        var data = function data() {
+            if (command && args) return JSON.stringify({ command: command, args: args });
+            if (command) return JSON.stringify({ command: command });
+        };
+        $.ajax({
+            url: '/api' + PLUGIN_BASEURL + 'LSqDeltaCalibration',
+            type: type,
+            dataType: 'json',
+            data: data(),
+            contentType: 'application/json; charset=UTF-8',
+            success: function success(data) {
+                if (successCb) successCb(data);
+            }
+        });
+    }
     /* view model class, parameters for constructor, container to bind to
      * Please see http://docs.octoprint.org/en/master/plugins/viewmodels.html#registering-custom-viewmodels for more details
      * and a full list of the available options.
