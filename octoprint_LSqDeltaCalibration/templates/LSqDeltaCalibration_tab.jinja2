@@ -19,28 +19,18 @@
         {{ _('Please connect your printer to get its capabilities') }}
       </div>
       <div class="control-group">
-      <label class="control-label">{{ _('Steps per mm') }}</label>
-        <div class="controls">
-          <table>
-            <tr>
-              <td>
-                X: <span data-bind="text: geometry().Prop">dd</span>
-              </td>
-              <td><input type="text" data-bind="value: geometry().str" step="0.1" style="width:90px"/>
-              </td>
-              <td>Y:</td>
-              <td>
-                <input type="number" step="0.1" style="width:90px"/>
-              </td>
-              <td>Z:</td>
-              <td>
-                <input type="number" step="0.1" style="width:90px"/>
-              </td>
-            </tr>
-          </table>
-          <span class="help-inline">Steps per millimiter, affected by belt strech.</span>
+      <label class="control-label">{{ _('Steps per mm') }} (X,Y,Z):</label>
+        <div class="input-append">
+            <input type="number" data-bind="value: geometry().StepsX" step="0.1" class="input-small"/>
+            <input type="number" data-bind="value: geometry().StepsY" step="0.1" class="input-small"/>
+            <input type="number" data-bind="value: geometry().StepsZ" step="0.1" class="input-small"/>
         </div>
       </div>
+        <div class="control-group">
+            <div class="input-append">
+                <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
+            </div>
+        </div>
     </div>
   </div>
 </form>

@@ -12,9 +12,43 @@ $(function() {
         // self.loginStateViewModel = parameters[0];
         self.settingsViewModel = parameters[0];
 
-        self.geometry = ko.observable({Prop : 5, str : "aa"});
+        self.geometry = ko.observable(
+            {
+                StepsX: 0,
+                StepsY: 0,
+                StepsZ: 0
+            });
 
-        // TODO: Implement your plugin's view model here.
+        self.fetchGeometry = fetchGeometry;
+
+        self.fromCurrentData = extractData;
+
+        self.logText = ko.observable
+
+    }
+
+    function emitLog(data)
+    {
+
+
+    }
+
+    function extractData(data)
+    {
+        probingInput = document.getElementById("rawProbingInput").value;
+        regex = /.*?PROBE: X(.*?), Y(.*?), Z(.*?)\n/gm;
+
+        var matches = [];
+        var match;
+        while (match = regex.exec(probingInput)) {
+            matches.push(match);
+        }
+        document.getElementById("numPoints").value = matches.length;
+
+    }
+
+    function fetchGeometry() {
+        OctoPrint.control.sendGcode("M503", null);
     }
 
     function request(type, command, args, successCb) {
@@ -33,6 +67,7 @@ $(function() {
             }
         });
     }
+
     /* view model class, parameters for constructor, container to bind to
      * Please see http://docs.octoprint.org/en/master/plugins/viewmodels.html#registering-custom-viewmodels for more details
      * and a full list of the available options.
