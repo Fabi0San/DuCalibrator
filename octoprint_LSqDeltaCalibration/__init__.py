@@ -30,7 +30,7 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
         # Define your plugin's asset files to automatically include in the
         # core UI here.
         return dict(
-            js=["js/LSqDeltaCalibration.js"],
+            js=["js/LSqDeltaCalibration.js","js/three.js","js/TrackballControls.js"],
             css=["css/LSqDeltaCalibration.css"],
             less=["less/LSqDeltaCalibration.less"]
         )
