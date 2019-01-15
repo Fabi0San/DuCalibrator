@@ -109,18 +109,16 @@ $(function() {
 
             if (logLines[i] == "Recv: ok") {
                 if (self.probePoints) {
-                    self.logText(self.probePoints);
-                    plotSurface(self.probePoints,self);
+                    //self.logText(self.probePoints);
+                    self.plot = preparePlot(document.getElementById("surfacePlotDiv"), 125, 200);
 
-                    self.plot.geometry.dynamic = true;
-
+                    self.plot.dynamic = true;
                     for (var j = 0; j < self.probePoints.length; j++) {
-                        self.plot.geometry.vertices.push(new THREE.Vector3(self.probePoints[j][1], self.probePoints[j][2], self.probePoints[j][3] + 0.1));
-                        //self.plot.geometry.vertices[j].z += 1;//.push(new THREE.Vector3(self.probePoints[j][1], self.probePoints[j][2], self.probePoints[j][3] + 0.1));
+                        self.plot.geometry.attributes.position.setXYZ(j, self.probePoints[j][1], self.probePoints[j][2], self.probePoints[j][3]*250);
+                        self.plot.geometry.setDrawRange(0,100);
                     }
-                    self.plot.geometry.verticesNeedUpdate = true;
-                    self.plot.geometry.elementsNeedUpdate  = true;
-                    self.plot.geometry.setDrawRange(0,90);
+                    self.plot.geometry.attributes.position.needsUpdate = true;
+                    self.logText(self.plot.geometry.attributes.position.array);
                 }
             }
 
@@ -154,12 +152,62 @@ $(function() {
         });
     }
 
+    function preparePlot(surfacePlotDiv, bedRadius, probeCount) {
+        //var surfacePlotDiv = document.getElementById("surfacePlotDiv");
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+        //scene.fog = new THREE.FogExp2(0xffffff, 0.002);
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setSize(surfacePlotDiv.clientWidth, surfacePlotDiv.clientHeight);
+        if (surfacePlotDiv.firstChild) surfacePlotDiv.removeChild(surfacePlotDiv.firstChild);
+        surfacePlotDiv.appendChild(renderer.domElement);
+
+        // add the bed plate for reference
+        scene.add(
+            new THREE.Mesh(
+                (new THREE.CylinderBufferGeometry(bedRadius, bedRadius, 0.001, 32))
+                    .rotateX(Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.6, transparent: true })));
+
+        // Axes arrows
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(bedRadius, 0, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0xff0000));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, bedRadius, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0x00ff00));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, bedRadius), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0x0000ff));
+
+        var geometry = new THREE.BufferGeometry();
+        var vertices = new Float32Array(probeCount * 3); // x,y,z
+        geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+        particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 3, sizeAttenuation: true}));
+        scene.add(particles);
+
+        // camera
+        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+        camera.position.set(0, -500, 100);
+        var controls = new THREE.TrackballControls(camera, renderer.domElement);
+        controls.minDistance = 10;
+        controls.maxDistance = 500;
+
+
+        var animate = function () {
+            requestAnimationFrame(animate);
+
+            controls.update();
+            renderer.render(scene, camera);
+        };
+
+        animate();
+
+        return particles;
+
+    }
+
 
     function plotSurface(points, self) {
         var surfacePlotDiv = document.getElementById("surfacePlotDiv");
         var scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
-        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
 
         var renderer = new THREE.WebGLRenderer();
 
@@ -167,16 +215,25 @@ $(function() {
         if (surfacePlotDiv.firstChild) surfacePlotDiv.removeChild(surfacePlotDiv.firstChild);
         surfacePlotDiv.appendChild(renderer.domElement);
 
+        // add the bed plate for reference
+        scene.add(
+            new THREE.Mesh(
+                (new THREE.CylinderBufferGeometry(0.5, 0.5, 0.001, 32))
+                    .rotateX(Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.6, transparent: true })));
+
+        // Axes arrows
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0xff0000));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x00ff00));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x0000ff));
+
         var geometry = new THREE.Geometry();
 
         for (var i = 0; i < points.length; ++i) {
             geometry.vertices.push(new THREE.Vector3(points[i][1],points[i][2],points[i][3]));
         }
 
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0xff0000));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x00ff00));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x0000ff));
-
+        // scan
         geometry.computeBoundingBox();
         var size = geometry.boundingBox.getSize();
         geometry.scale(1 / size.x, 1 / size.y, 0.3 / (size.z == 0 ? 1 : size.z));
@@ -184,9 +241,8 @@ $(function() {
         particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 0.025 }));
         scene.add(particles);
 
-        var gridHelper = new THREE.GridHelper(1, 20, 0x000000, 0x000000);
-        gridHelper.rotation.x = Math.PI / 2;
-
+        // camera
+        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
         camera.position.set(0, -5, 1);
         var controls = new THREE.TrackballControls(camera, renderer.domElement);
         controls.minDistance = 0;
