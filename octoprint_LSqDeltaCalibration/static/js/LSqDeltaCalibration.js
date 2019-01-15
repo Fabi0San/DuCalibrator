@@ -45,6 +45,10 @@ $(function() {
 
         self.probeBed = function () {
             self.isProbing = true;
+            self.probePoints = [];
+
+            self.plot = preparePlot(document.getElementById("surfacePlotDiv"), 125, 200);
+
             if (self.isPrinterReady())
                 OctoPrint.control.sendGcode("G29.1 P1", null);
             else parseResponse(self.simulatedG29, self);
@@ -104,22 +108,14 @@ $(function() {
             if (self.isProbing) {
                 if (match = probePointRegex.exec(logLines[i])) {
                     self.probePoints.push(match);
+                    self.plot.geometry.attributes.position.setXYZ(self.probePoints.length-1, match[1], match[2], match[3] * 250);
+                    self.plot.geometry.setDrawRange(0, self.probePoints.length-1);
+                    self.plot.geometry.attributes.position.needsUpdate = true;
                 }
             }
 
             if (logLines[i] == "Recv: ok") {
-                if (self.probePoints) {
-                    //self.logText(self.probePoints);
-                    self.plot = preparePlot(document.getElementById("surfacePlotDiv"), 125, 200);
-
-                    self.plot.dynamic = true;
-                    for (var j = 0; j < self.probePoints.length; j++) {
-                        self.plot.geometry.attributes.position.setXYZ(j, self.probePoints[j][1], self.probePoints[j][2], self.probePoints[j][3]*250);
-                        self.plot.geometry.setDrawRange(0,100);
-                    }
-                    self.plot.geometry.attributes.position.needsUpdate = true;
-                    self.logText(self.plot.geometry.attributes.position.array);
-                }
+                self.isProbing = false;
             }
 
         }
@@ -180,6 +176,8 @@ $(function() {
         geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
         particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 3, sizeAttenuation: true}));
+        particles.geometry.setDrawRange(0, 0);
+
         scene.add(particles);
 
         // camera
