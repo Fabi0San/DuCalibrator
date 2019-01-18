@@ -63,10 +63,26 @@
       <div class="control-group">
             <div class="input-append">
                 <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
-                <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
             </div>
         </div>
-        <div class="input-append" id="surfacePlotDiv" style="
+      <div class="control-group">
+        <label class="control-label">{{ _('Probe Radius') }} :</label>
+        <div class="controls">
+          <input type="number" data-bind="value: probeRadius" step="1" class="input-small"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label">{{ _('Probe points') }} :</label>
+        <div class="controls">
+          <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="input-append">
+          <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
+        </div>
+      </div>
+      <div class="input-append" id="surfacePlotDiv" style="
                                     border-style: solid;
                                     border-width: 2px;
                                     border-color: red;
