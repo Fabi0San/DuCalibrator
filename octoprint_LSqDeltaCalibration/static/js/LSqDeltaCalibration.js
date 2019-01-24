@@ -46,6 +46,7 @@ $(function() {
         // ui commands
         self.probeBed = function () { probeBed(self); };
         self.fetchGeometry = function () { fetchGeometry(self); };
+        self.computeCorrections = function () { computeCorrections(self); }
 
         //hooks
         self.fromCurrentData = function (data) { processNewPrinterData(data, self); };
@@ -124,30 +125,30 @@ $(function() {
 
             if (self.isFetchingGeometry) {
                 if (match = stepsPerUnitRegex.exec(logLines[i])) {
-                    newGeometry.StepsPerUnit = [match[1], match[2], match[3]];
+                    newGeometry.StepsPerUnit = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
                 }
 
                 if (match = endStopOffsetRegex.exec(logLines[i])) {
-                    newGeometry.EndStopOffset = [match[1], match[2], match[3]];
+                    newGeometry.EndStopOffset = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
                 }
 
                 if (match = towerOffsetRegex.exec(logLines[i])) {
-                    newGeometry.TowerOffset = [match[1], match[2], match[3]];
+                    newGeometry.TowerOffset = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
                 }
 
                 if (match = rodLenAndRadiusRegex.exec(logLines[i])) {
-                    newGeometry.RodLength = match[1];
-                    newGeometry.DeltaRadius = match[2];
+                    newGeometry.RodLength = parseFloat(match[1]);
+                    newGeometry.DeltaRadius = parseFloat(match[2]);
                 }
 
                 if (match = maxHeightRegex.exec(logLines[i])) {
-                    newGeometry.MaxHeight = match[1];
+                    newGeometry.MaxHeight = parseFloat(match[1]);
                 }
             }
 
             if (self.isProbing) {
                 if (match = probePointRegex.exec(logLines[i])) {
-                    logProbePoint(self, match[1], match[2], match[3]);
+                    logProbePoint(self, parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]));
                 }
             }
 
@@ -166,6 +167,22 @@ $(function() {
             OctoPrint.control.sendGcode("M503", null);
         else parseResponse(self.simulatedM503, self);
     }
+
+    function computeCorrections(self) {
+        var oldGeo = self.geometry();
+        var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f)), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
+        console.log(DoDeltaCalibration(geo, self.probePoints, 7));
+/*        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
+        console.log(DoDeltaCalibration(geo, self.probePoints, 6));
+        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
+        console.log(DoDeltaCalibration(geo, self.probePoints, 3));*/
+        console.log(geo);
+        console.log(geo.EndStopOffset);
+        console.log(geo.TowerOffset);
+        console.log(geo.StepsPerUnit);
+        //debugger;
+    }
+
 
     function request(type, command, args, successCb) {
         var data = function data() {
@@ -295,6 +312,19 @@ $(function() {
 
     }
 
+    /*
+      Success! Calibrated 7 factors using 50 points, deviation before 0.0550 after 0.0184
+     
+DiagonalRod: 327.5299152950855
+Radius: 169.72554868070145
+Height: 237.0044192709013
+EndStopOffset: (3) [0.39453686230441354, 0, 0.16285191854281486]
+TowerOffset: (3) [-0.13306035015788306, -0.2757563138357201, 0]
+StepsPerUnit: (3) [400, 400, 400]
+homedCarriageHeight: 517.1277555680415
+towerX: (3) [-147.1833206009464, 146.57650376099073, -0]
+towerY: (3) [-84.52119267878436, -85.56921420796988, 169.72554868070145]
+*/
 
 
     /* view model class, parameters for constructor, container to bind to
