@@ -169,8 +169,10 @@ $(function() {
     }
 
     function computeCorrections(self) {
+
+        console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline")
         var oldGeo = self.geometry();
-        var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f)), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
+        var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, 7));
 /*        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
         console.log(DoDeltaCalibration(geo, self.probePoints, 6));
@@ -253,72 +255,17 @@ $(function() {
 
     }
 
-
-    function plotSurface(points, self) {
-        var surfacePlotDiv = document.getElementById("surfacePlotDiv");
-        var scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff);
-
-        var renderer = new THREE.WebGLRenderer();
-
-        renderer.setSize(surfacePlotDiv.clientWidth, surfacePlotDiv.clientHeight);
-        if (surfacePlotDiv.firstChild) surfacePlotDiv.removeChild(surfacePlotDiv.firstChild);
-        surfacePlotDiv.appendChild(renderer.domElement);
-
-        // add the bed plate for reference
-        scene.add(
-            new THREE.Mesh(
-                (new THREE.CylinderBufferGeometry(0.5, 0.5, 0.001, 32))
-                    .rotateX(Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.6, transparent: true })));
-
-        // Axes arrows
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0xff0000));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x00ff00));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(-.550, -.550, 0), 0.5, 0x0000ff));
-
-        var geometry = new THREE.Geometry();
-
-        for (var i = 0; i < points.length; ++i) {
-            geometry.vertices.push(new THREE.Vector3(points[i][1],points[i][2],points[i][3]));
-        }
-
-        // scan
-        geometry.computeBoundingBox();
-        var size = geometry.boundingBox.getSize();
-        geometry.scale(1 / size.x, 1 / size.y, 0.3 / (size.z == 0 ? 1 : size.z));
-
-        particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 0.025 }));
-        scene.add(particles);
-
-        // camera
-        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-        camera.position.set(0, -5, 1);
-        var controls = new THREE.TrackballControls(camera, renderer.domElement);
-        controls.minDistance = 0;
-        controls.maxDistance = 500;
-
-
-        var animate = function () {
-            requestAnimationFrame(animate);
-
-            controls.update();
-            renderer.render(scene, camera);
-        };
-
-        animate();
-
-        self.plot = particles;
-
-    }
-
     /*
-      Success! Calibrated 7 factors using 50 points, deviation before 0.0550 after 0.0184
+     * baseline:
+      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877
+
+      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774377395
+      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.0183950188153732
      
 DiagonalRod: 327.5299152950855
 Radius: 169.72554868070145
 Height: 237.0044192709013
-EndStopOffset: (3) [0.39453686230441354, 0, 0.16285191854281486]
+EndStopOffset: (3) [-0.39453686230441354, 0, -0.16285191854281486]
 TowerOffset: (3) [-0.13306035015788306, -0.2757563138357201, 0]
 StepsPerUnit: (3) [400, 400, 400]
 homedCarriageHeight: 517.1277555680415

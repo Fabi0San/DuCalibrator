@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = false;
+var debug = true;
 
 var firmware;
 var normalise = true;
@@ -170,7 +170,7 @@ class DeltaGeometry
 
     ComputeDerivative(deriv, ha, hb, hc)
     {
-        var perturb = 0.2;			// perturbation amount in mm or degrees
+        var perturb = (deriv >6 ? 0.002 : 0.2);			// perturbation amount in mm or degrees
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         switch (deriv) {
@@ -203,9 +203,16 @@ class DeltaGeometry
         hiParams.RecomputeGeometry();
         loParams.RecomputeGeometry();
 
-        var zHi = hiParams.InverseTransform((deriv == 0) ? ha + perturb : ha, (deriv == 1) ? hb + perturb : hb, (deriv == 2) ? hc + perturb : hc);
-        var zLo = loParams.InverseTransform((deriv == 0) ? ha - perturb : ha, (deriv == 1) ? hb - perturb : hb, (deriv == 2) ? hc - perturb : hc);
+        var zHi = hiParams.InverseTransform(
+            (1 + (deriv == 7 ? perturb : 0)) * ((deriv == 0) ? ha + perturb : ha),
+            (1 + (deriv == 8 ? perturb : 0)) * ((deriv == 1) ? hb + perturb : hb),
+            (1 + (deriv == 9 ? perturb : 0)) * ((deriv == 2) ? hc + perturb : hc));
+        var zLo = loParams.InverseTransform(
+            (1 - (deriv == 7 ? perturb : 0)) * ((deriv == 0) ? ha - perturb : ha),
+            (1 - (deriv == 8 ? perturb : 0)) * ((deriv == 1) ? hb - perturb : hb),
+            (1 - (deriv == 9 ? perturb : 0)) * ((deriv == 2) ? hc - perturb : hc));
 
+        //debugger;
         return (zHi - zLo) / (2 * perturb);
     }
 
@@ -245,8 +252,13 @@ class DeltaGeometry
                 this.TowerOffset[XAxis] += v[4];
                 this.TowerOffset[YAxis] += v[5];
 
-                if (numFactors == 7) {
+                if (numFactors >= 7) {
                     this.DiagonalRod += v[6];
+
+                    if (numFactors ==10) {
+                        this.BeltStrech = [v[7], v[8], v[9]]
+                        debugger;
+                    }
                 }
             }
             this.RecomputeGeometry();
@@ -279,8 +291,8 @@ function PrintVector(label, v) {
 }
 
 function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
-    if (numFactors != 3 && numFactors != 4 && numFactors != 6 && numFactors != 7) {
-        throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7 supported";
+    if (numFactors != 3 && numFactors != 4 && numFactors != 6 && numFactors != 7 && numFactors !=10) {
+        throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7, 10 supported";
     }
     var numPoints = probedPoints.length;
 
@@ -394,62 +406,10 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
         if (iteration == 2) { break; }
     }
 
-    return "Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints).toFixed(4)
-            + " after " + expectedRmsError.toFixed(4);
+    return "Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints)
+            + " after " + expectedRmsError;
 }
 
-function convertIncomingEndstops() {
-    var endstopFactor = (firmware == "RRF") ? 1.0
-                        //: (firmware == "Smoothieware") ? 1.0
-                        : (firmware == "Repetier") ? 1.0/document.getElementById("stepspermm").value
-                            : -1.0;
-    deltaParams.xstop *= endstopFactor;
-    deltaParams.ystop *= endstopFactor;
-    deltaParams.zstop *= endstopFactor;
-}
-
-function convertOutgoingEndstops() {
-    var endstopFactor = (firmware == "RRF") ? 1.0
-                        //: (firmware == "Smoothieware") ? 1.0
-                        : (firmware == "Repetier") ? (document.getElementById("stepspermm").value)
-                            : -1.0;
-    deltaParams.xstop *= endstopFactor;
-    deltaParams.ystop *= endstopFactor;
-    deltaParams.zstop *= endstopFactor;
-}
-
-function setNewParameters() {
-    var endstopPlaces = (firmware == "Repetier") ? 0 : 3;
-    document.getElementById("newxstop").value = deltaParams.xstop.toFixed(endstopPlaces);
-    document.getElementById("newystop").value = deltaParams.ystop.toFixed(endstopPlaces);
-    document.getElementById("newzstop").value = deltaParams.zstop.toFixed(endstopPlaces);
-    document.getElementById("newrodlength").value = deltaParams.diagonal.toFixed(4);
-    document.getElementById("newradius").value = deltaParams.radius.toFixed(4);
-    document.getElementById("newhomedheight").value = deltaParams.homedHeight.toFixed(3);
-    document.getElementById("newxpos").value = deltaParams.xadj.toFixed(4);
-    document.getElementById("newypos").value = deltaParams.yadj.toFixed(4);
-    document.getElementById("newzpos").value = deltaParams.zadj.toFixed(4);
-}
-
-
-function calc() {
-    getParameters();
-    convertIncomingEndstops();
-    try {
-        var rslt = DoDeltaCalibration();
-        document.getElementById("result").innerHTML = "&nbsp;Success! " + rslt + "&nbsp;";
-        document.getElementById("result").style.backgroundColor = "LightGreen";
-        convertOutgoingEndstops();
-        setNewParameters();
-        generateCommands();
-        document.getElementById("copyButton").disabled = false;
-    }
-    catch (err) {
-        document.getElementById("result").innerHTML = "&nbsp;Error! " + err + "&nbsp;";
-        document.getElementById("result").style.backgroundColor = "LightPink";
-        document.getElementById("copyButton").disabled = true;
-    }
-}
 
 
 // End
