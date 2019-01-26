@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = true;
+var debug = false;
 
 var firmware;
 var normalise = true;
@@ -170,13 +170,23 @@ class DeltaGeometry
 
     ComputeDerivative(deriv, ha, hb, hc)
     {
-        var perturb = (deriv >6 ? 0.002 : 0.2);			// perturbation amount in mm or degrees
+        var perturb = (deriv > 6 ? 0.002 : 0.2);			// perturbation amount in mm or degrees
+        var haPerturb = 0;
+        var hbPerturb = 0;
+        var hcPerturb = 0;
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         switch (deriv) {
             case 0:
+                haPerturb = perturb;
+                break;
+
             case 1:
+                hbPerturb = perturb;
+                break;
+
             case 2:
+                hcPerturb = perturb;
                 break;
 
             case 3:
@@ -198,19 +208,26 @@ class DeltaGeometry
                 hiParams.DiagonalRod += perturb;
                 loParams.DiagonalRod -= perturb;
                 break;
+
+            case 7:
+                haPerturb = (this.homedCarriageHeight - ha) * perturb;
+                break;
+
+            case 8:
+                hbPerturb = (this.homedCarriageHeight - hb) * perturb;
+                break;
+
+            case 9:
+                hcPerturb = (this.homedCarriageHeight - hc) * perturb;
+                break;
+
         }
 
         hiParams.RecomputeGeometry();
         loParams.RecomputeGeometry();
 
-        var zHi = hiParams.InverseTransform(
-            (1 + (deriv == 7 ? perturb : 0)) * ((deriv == 0) ? ha + perturb : ha),
-            (1 + (deriv == 8 ? perturb : 0)) * ((deriv == 1) ? hb + perturb : hb),
-            (1 + (deriv == 9 ? perturb : 0)) * ((deriv == 2) ? hc + perturb : hc));
-        var zLo = loParams.InverseTransform(
-            (1 - (deriv == 7 ? perturb : 0)) * ((deriv == 0) ? ha - perturb : ha),
-            (1 - (deriv == 8 ? perturb : 0)) * ((deriv == 1) ? hb - perturb : hb),
-            (1 - (deriv == 9 ? perturb : 0)) * ((deriv == 2) ? hc - perturb : hc));
+        var zHi = hiParams.InverseTransform(ha + haPerturb, hb + hbPerturb, hc + hcPerturb);
+        var zLo = loParams.InverseTransform(ha - haPerturb, hb - hbPerturb, hc - hcPerturb);
 
         //debugger;
         return (zHi - zLo) / (2 * perturb);
