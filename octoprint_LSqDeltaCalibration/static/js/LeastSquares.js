@@ -9,6 +9,10 @@ const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
 const YAxis = 1;
 const ZAxis = 2;
+const AlphaTower = 0;
+const BetaTower = 1;
+const GammaTower = 2;
+
 
 function fsquare(x) {
     return x * x;
@@ -106,9 +110,9 @@ class DeltaGeometry
         this.RecomputeGeometry();
     }
     
-    Transform(machinePos, axis)
+    Transform(machinePos, tower)
     {
-        return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerX[axis]) - fsquare(machinePos[YAxis] - this.towerY[axis]));
+        return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower, XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower,YAxis]));
     }
 
     // Inverse transform method, We only need the Z component of the result.
@@ -128,8 +132,8 @@ class DeltaGeometry
         var R2 = fsquare(R), U2 = fsquare(U);
 
         var A = U2 + R2 + this.Q2;
-        var minusHalfB = S * U + P * R + Ha * this.Q2 + this.towerX[0] * U * this.Q - this.towerY[0] * R * this.Q;
-        var C = fsquare(S + this.towerX[0] * this.Q) + fsquare(P - this.towerY[0] * this.Q) + (fsquare(Ha) - this.D2) * this.Q2;
+        var minusHalfB = S * U + P * R + Ha * this.Q2 + this.towerPositions[AlphaTower,XAxis] * U * this.Q - this.towerPositions[AlphaTower, YAxis] * R * this.Q;
+        var C = fsquare(S + this.towerPositions[AlphaTower, XAxis] * this.Q) + fsquare(P - this.towerPositions[AlphaTower, YAxis] * this.Q) + (fsquare(Ha) - this.D2) * this.Q2;
 
         var rslt = (minusHalfB - Math.sqrt(fsquare(minusHalfB) - A * C)) / A;
         if (isNaN(rslt)) {
@@ -141,24 +145,25 @@ class DeltaGeometry
 
     RecomputeGeometry()
     {
-        this.towerX = [];
-        this.towerY = [];
-        this.towerX.push(-(this.Radius * Math.cos((30 + this.TowerOffset[XAxis]) * degreesToRadians)));
-        this.towerY.push(-(this.Radius * Math.sin((30 + this.TowerOffset[XAxis]) * degreesToRadians)));
-        this.towerX.push(+(this.Radius * Math.cos((30 - this.TowerOffset[YAxis]) * degreesToRadians)));
-        this.towerY.push(-(this.Radius * Math.sin((30 - this.TowerOffset[YAxis]) * degreesToRadians)));
-        this.towerX.push(-(this.Radius * Math.sin(this.TowerOffset[ZAxis] * degreesToRadians)));
-        this.towerY.push(+(this.Radius * Math.cos(this.TowerOffset[ZAxis] * degreesToRadians)));
+        this.towerPositions = [
+            [-(this.Radius * Math.cos((30 + this.TowerOffset[AlphaTower]) * degreesToRadians)),
+             -(this.Radius * Math.sin((30 + this.TowerOffset[AlphaTower]) * degreesToRadians))],
+            [+(this.Radius * Math.cos((30 - this.TowerOffset[BetaTower]) * degreesToRadians)),
+             -(this.Radius * Math.sin((30 - this.TowerOffset[BetaTower]) * degreesToRadians))],
+            [-(this.Radius * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
+             +(this.Radius * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
-        this.Xbc = this.towerX[2] - this.towerX[1];
-        this.Xca = this.towerX[0] - this.towerX[2];
-        this.Xab = this.towerX[1] - this.towerX[0];
-        this.Ybc = this.towerY[2] - this.towerY[1];
-        this.Yca = this.towerY[0] - this.towerY[2];
-        this.Yab = this.towerY[1] - this.towerY[0];
-        this.coreFa = fsquare(this.towerX[0]) + fsquare(this.towerY[0]);
-        this.coreFb = fsquare(this.towerX[1]) + fsquare(this.towerY[1]);
-        this.coreFc = fsquare(this.towerX[2]) + fsquare(this.towerY[2]);
+        this.Xbc = this.towerPositions[GammaTower,XAxis] - this.towerPositions[BetaTower,XAxis];
+        this.Xca = this.towerPositions[AlphaTower, XAxis] - this.towerPositions[GammaTower, XAxis];
+        this.Xab = this.towerPositions[BetaTower,XAxis] - this.towerPositions[AlphaTower,XAxis];
+
+        this.Ybc = this.towerPositions[GammaTower, YAxis] - this.towerPositions[BetaTower, YAxis];
+        this.Yca = this.towerPositions[AlphaTower, YAxis] - this.towerPositions[GammaTower, YAxis];
+        this.Yab = this.towerPositions[BetaTower, YAxis] - this.towerPositions[AlphaTower, YAxis];
+
+        this.coreFa = fsquare(this.towerPositions[AlphaTower, XAxis] + fsquare(this.towerPositions[AlphaTower, YAxis]);
+        this.coreFb = fsquare(this.towerPositions[BetaTower, XAxis] + fsquare(this.towerPositions[BetaTower, YAxis]);
+        this.coreFc = fsquare(this.towerPositions[GammaTower, XAxis] + fsquare(this.towerPositions[GammaTower, YAxis]);
         this.Q = 2 * (this.Xca * this.Yab - this.Xab * this.Yca);
         this.Q2 = fsquare(this.Q);
         this.D2 = fsquare(this.DiagonalRod);
@@ -210,15 +215,15 @@ class DeltaGeometry
                 break;
 
             case 7:
-                haPerturb = (this.homedCarriageHeight - ha) * perturb;
+                haPerturb = (this.homedCarriageHeight - ha) * -perturb;
                 break;
 
             case 8:
-                hbPerturb = (this.homedCarriageHeight - hb) * perturb;
+                hbPerturb = (this.homedCarriageHeight - hb) * -perturb;
                 break;
 
             case 9:
-                hcPerturb = (this.homedCarriageHeight - hc) * perturb;
+                hcPerturb = (this.homedCarriageHeight - hc) * -perturb;
                 break;
 
         }
@@ -274,10 +279,10 @@ class DeltaGeometry
 
                     if (numFactors ==10) {
                         this.BeltStrech = [v[7], v[8], v[9]]
-                        debugger;
                     }
                 }
             }
+                       // debugger;
             this.RecomputeGeometry();
         }
 
@@ -356,14 +361,14 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
         var normalMatrix = new Matrix(numFactors, numFactors + 1);
         for (var i = 0; i < numFactors; ++i) {
             for (var j = 0; j < numFactors; ++j) {
-                var temp = derivativeMatrix.data[0][i] * derivativeMatrix.data[0][j];
-                for (var k = 1; k < numPoints; ++k) {
+                var temp = 0; //derivativeMatrix.data[0][i] * derivativeMatrix.data[0][j];
+                for (var k = 0; k < numPoints; ++k) {
                     temp += derivativeMatrix.data[k][i] * derivativeMatrix.data[k][j];
                 }
                 normalMatrix.data[i][j] = temp;
             }
-            var temp = derivativeMatrix.data[0][i] * -(probedPoints[0][ZAxis] + corrections[0]);
-            for (var k = 1; k < numPoints; ++k) {
+            var temp = 0; //derivativeMatrix.data[0][i] * -(probedPoints[0][ZAxis] + corrections[0]);
+            for (var k = 0; k < numPoints; ++k) {
                 temp += derivativeMatrix.data[k][i] * -(probedPoints[k][ZAxis] + corrections[k]);
             }
             normalMatrix.data[i][numFactors] = temp;
@@ -415,12 +420,13 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
             DebugPrint(PrintVector("Expected probe error", expectedResiduals));
+            console.log("Iteration "+iteration+" rms " + expectedRmsError)
         }
 
         // Decide whether to do another iteration Two is slightly better than one, but three doesn't improve things.
         // Alternatively, we could stop when the expected RMS error is only slightly worse than the RMS of the residuals.
         ++iteration;
-        if (iteration == 2) { break; }
+        if (iteration == 20) { break; }
     }
 
     return "Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints)
