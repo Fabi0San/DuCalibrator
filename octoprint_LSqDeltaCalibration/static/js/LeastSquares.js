@@ -107,12 +107,30 @@ class DeltaGeometry
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+        //this.BeltStrech = [1.0, 1.0, 1.0];
         this.RecomputeGeometry();
     }
-    
+
+    CarriageStepsFromTop(position, tower)
+    {
+        var mmFromTop = (this.homedCarriageHeight + this.EndStopOffset[tower]) // totalTowerHeight from bed to endstop
+            - this.Transform(position, tower);
+
+        return mmFromTop * this.StepsPerUnit[tower];
+    }
+
     Transform(machinePos, tower)
     {
-        return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower, XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower,YAxis]));
+        return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
+    }
+
+
+    InverseTransformFromStepsFromTop(Sa, Sb, Sc)
+    {
+        return this.InverseTransform(
+            this.homedCarriageHeight - ((Sa / this.StepsPerUnit[AlphaTower]) - this.EndStopOffset[AlphaTower]),
+            this.homedCarriageHeight - ((Sb / this.StepsPerUnit[BetaTower]) - this.EndStopOffset[BetaTower]),
+            this.homedCarriageHeight - ((Sc / this.StepsPerUnit[GammaTower]) - this.EndStopOffset[GammaTower]));
     }
 
     // Inverse transform method, We only need the Z component of the result.
@@ -132,8 +150,8 @@ class DeltaGeometry
         var R2 = fsquare(R), U2 = fsquare(U);
 
         var A = U2 + R2 + this.Q2;
-        var minusHalfB = S * U + P * R + Ha * this.Q2 + this.towerPositions[AlphaTower,XAxis] * U * this.Q - this.towerPositions[AlphaTower, YAxis] * R * this.Q;
-        var C = fsquare(S + this.towerPositions[AlphaTower, XAxis] * this.Q) + fsquare(P - this.towerPositions[AlphaTower, YAxis] * this.Q) + (fsquare(Ha) - this.D2) * this.Q2;
+        var minusHalfB = S * U + P * R + Ha * this.Q2 + this.towerPositions[AlphaTower][XAxis] * U * this.Q - this.towerPositions[AlphaTower][YAxis] * R * this.Q;
+        var C = fsquare(S + this.towerPositions[AlphaTower][XAxis] * this.Q) + fsquare(P - this.towerPositions[AlphaTower][YAxis] * this.Q) + (fsquare(Ha) - this.D2) * this.Q2;
 
         var rslt = (minusHalfB - Math.sqrt(fsquare(minusHalfB) - A * C)) / A;
         if (isNaN(rslt)) {
@@ -153,45 +171,44 @@ class DeltaGeometry
             [-(this.Radius * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
              +(this.Radius * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
-        this.Xbc = this.towerPositions[GammaTower,XAxis] - this.towerPositions[BetaTower,XAxis];
-        this.Xca = this.towerPositions[AlphaTower, XAxis] - this.towerPositions[GammaTower, XAxis];
-        this.Xab = this.towerPositions[BetaTower,XAxis] - this.towerPositions[AlphaTower,XAxis];
+        this.Xbc = this.towerPositions[GammaTower][XAxis] - this.towerPositions[BetaTower][XAxis];
+        this.Xca = this.towerPositions[AlphaTower][XAxis] - this.towerPositions[GammaTower][XAxis];
+        this.Xab = this.towerPositions[BetaTower][XAxis] - this.towerPositions[AlphaTower][XAxis];
 
-        this.Ybc = this.towerPositions[GammaTower, YAxis] - this.towerPositions[BetaTower, YAxis];
-        this.Yca = this.towerPositions[AlphaTower, YAxis] - this.towerPositions[GammaTower, YAxis];
-        this.Yab = this.towerPositions[BetaTower, YAxis] - this.towerPositions[AlphaTower, YAxis];
+        this.Ybc = this.towerPositions[GammaTower][YAxis] - this.towerPositions[BetaTower][YAxis];
+        this.Yca = this.towerPositions[AlphaTower][YAxis] - this.towerPositions[GammaTower][YAxis];
+        this.Yab = this.towerPositions[BetaTower][YAxis] - this.towerPositions[AlphaTower][YAxis];
 
-        this.coreFa = fsquare(this.towerPositions[AlphaTower, XAxis] + fsquare(this.towerPositions[AlphaTower, YAxis]);
-        this.coreFb = fsquare(this.towerPositions[BetaTower, XAxis] + fsquare(this.towerPositions[BetaTower, YAxis]);
-        this.coreFc = fsquare(this.towerPositions[GammaTower, XAxis] + fsquare(this.towerPositions[GammaTower, YAxis]);
+        this.coreFa = fsquare(this.towerPositions[AlphaTower][XAxis]) + fsquare(this.towerPositions[AlphaTower][YAxis]);
+        this.coreFb = fsquare(this.towerPositions[BetaTower][XAxis]) + fsquare(this.towerPositions[BetaTower][YAxis]);
+        this.coreFc = fsquare(this.towerPositions[GammaTower][XAxis]) + fsquare(this.towerPositions[GammaTower][YAxis]);
         this.Q = 2 * (this.Xca * this.Yab - this.Xab * this.Yca);
         this.Q2 = fsquare(this.Q);
         this.D2 = fsquare(this.DiagonalRod);
 
         // Calculate the base carriage height when the printer is homed.
-        var tempHeight = this.DiagonalRod;		// any sensible height will do here, probably even zero
-        this.homedCarriageHeight = this.Height + tempHeight - this.InverseTransform(tempHeight, tempHeight, tempHeight);
+        this.homedCarriageHeight = this.Height - this.InverseTransform(0, 0, 0);
     }
 
-    ComputeDerivative(deriv, ha, hb, hc)
+    InsertPerturb(deriv)
     {
-        var perturb = (deriv > 6 ? 0.002 : 0.2);			// perturbation amount in mm or degrees
-        var haPerturb = 0;
-        var hbPerturb = 0;
-        var hcPerturb = 0;
+        var perturb = 0.2;         // perturbation amount in mm or degrees
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         switch (deriv) {
             case 0:
-                haPerturb = perturb;
+                hiParams.EndStopOffset[AlphaTower] += perturb;
+                loParams.EndStopOffset[AlphaTower] -= perturb;
                 break;
 
             case 1:
-                hbPerturb = perturb;
+                hiParams.EndStopOffset[BetaTower] += perturb;
+                loParams.EndStopOffset[BetaTower] -= perturb;
                 break;
 
             case 2:
-                hcPerturb = perturb;
+                hiParams.EndStopOffset[GammaTower] += perturb;
+                loParams.EndStopOffset[GammaTower] -= perturb;
                 break;
 
             case 3:
@@ -215,15 +232,18 @@ class DeltaGeometry
                 break;
 
             case 7:
-                haPerturb = (this.homedCarriageHeight - ha) * -perturb;
+                hiParams.StepsPerUnit[AlphaTower] += perturb;
+                loParams.StepsPerUnit[AlphaTower] -= perturb;
                 break;
 
             case 8:
-                hbPerturb = (this.homedCarriageHeight - hb) * -perturb;
+                hiParams.StepsPerUnit[BetaTower] += perturb;
+                loParams.StepsPerUnit[BetaTower] -= perturb;
                 break;
 
             case 9:
-                hcPerturb = (this.homedCarriageHeight - hc) * -perturb;
+                hiParams.StepsPerUnit[GammaTower] += perturb;
+                loParams.StepsPerUnit[GammaTower] -= perturb;
                 break;
 
         }
@@ -231,11 +251,30 @@ class DeltaGeometry
         hiParams.RecomputeGeometry();
         loParams.RecomputeGeometry();
 
-        var zHi = hiParams.InverseTransform(ha + haPerturb, hb + hbPerturb, hc + hcPerturb);
-        var zLo = loParams.InverseTransform(ha - haPerturb, hb - hbPerturb, hc - hcPerturb);
+        return [hiParams, loParams];
+    }
+
+
+    ComputeDerivativeFromStepsFromTop(deriv, Sa, Sb, Sc)
+    {
+        var perturbed = this.InsertPerturb(deriv);
+
+        var zHi = perturbed[0].InverseTransformFromStepsFromTop(Sa, Sb, Sc);
+        var zLo = perturbed[1].InverseTransformFromStepsFromTop(Sa, Sb, Sc);
 
         //debugger;
-        return (zHi - zLo) / (2 * perturb);
+        return (zHi - zLo) / (2 * 0.2);
+    }
+
+    ComputeDerivative(deriv, ha, hb, hc)
+    {
+        var perturbed = this.InsertPerturb(deriv);
+
+        var zHi = perturbed[0].InverseTransform(ha, hb, hc);
+        var zLo = perturbed[1].InverseTransform(ha, hb, hc);
+
+        //debugger;
+        return (zHi - zLo) / (2 * 0.2);
     }
 
     // Make the average of the endstop adjustments zero, or make all emndstop corrections negative, without changing the individual homed carriage heights
@@ -245,6 +284,7 @@ class DeltaGeometry
         this.EndStopOffset = this.EndStopOffset.map(v => v - eav);
         this.Height += eav;
         this.homedCarriageHeight += eav;
+        return eav;
     }
 
     // Perform 3, 4, 6 or 7-factor adjustment.
@@ -257,28 +297,31 @@ class DeltaGeometry
     //  Diagonal rod length adjustment
     Adjust(numFactors, v, norm)
     {
-        var oldCarriageHeightA = this.homedCarriageHeight + this.EndStopOffset[XAxis];	// save for later
+        var oldCarriageHeightA = this.homedCarriageHeight + this.EndStopOffset[AlphaTower]; // save for later
+        var endStopNormal = 0;
 
         // Update endstop adjustments
-        this.EndStopOffset[XAxis] += v[0];
-        this.EndStopOffset[YAxis] += v[1];
-        this.EndStopOffset[ZAxis] += v[2];
+        this.EndStopOffset[AlphaTower] += v[0];
+        this.EndStopOffset[BetaTower] += v[1];
+        this.EndStopOffset[GammaTower] += v[2];
         if (norm) {
-            this.NormaliseEndstopAdjustments();
+            endStopNormal = this.NormaliseEndstopAdjustments();
         }
 
         if (numFactors >= 4) {
             this.Radius += v[3];
 
             if (numFactors >= 6) {
-                this.TowerOffset[XAxis] += v[4];
-                this.TowerOffset[YAxis] += v[5];
+                this.TowerOffset[AlphaTower] += v[4];
+                this.TowerOffset[BetaTower] += v[5];
 
                 if (numFactors >= 7) {
                     this.DiagonalRod += v[6];
 
-                    if (numFactors ==10) {
-                        this.BeltStrech = [v[7], v[8], v[9]]
+                    if (numFactors == 10) {
+                        this.StepsPerUnit[AlphaTower] += v[7];
+                        this.StepsPerUnit[BetaTower] += v[8];
+                        this.StepsPerUnit[GammaTower] += v[9];
                     }
                 }
             }
@@ -288,7 +331,7 @@ class DeltaGeometry
 
         // Adjusting the diagonal and the tower positions affects the homed carriage height.
         // We need to adjust Height to allow for this, to get the change that was requested in the endstop corrections.
-        var heightError = this.homedCarriageHeight + this.EndStopOffset[XAxis] - oldCarriageHeightA - v[0];
+        var heightError = this.homedCarriageHeight + this.EndStopOffset[AlphaTower] - oldCarriageHeightA - v[0];
         this.Height -= heightError;
         this.homedCarriageHeight -= heightError;
     }
@@ -323,7 +366,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
     }
 
     // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
-    var probeMotorPositions = new Matrix(numPoints, 3);
+    var probedCarriagePositions = new Matrix(numPoints, 3);
     var corrections = new Array(numPoints);
     var initialSumOfSquares = 0.0;
     for (var i = 0; i < numPoints; ++i) {
@@ -333,16 +376,18 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
         machinePos.push(probedPoints[i][YAxis]);
         machinePos.push(0.0);
 
-        probeMotorPositions.data[i][0] = currentGeometry.Transform(machinePos, 0);
-        probeMotorPositions.data[i][1] = currentGeometry.Transform(machinePos, 1);
-        probeMotorPositions.data[i][2] = currentGeometry.Transform(machinePos, 2);
+        probedCarriagePositions.data[i][0] = currentGeometry.CarriageStepsFromTop(machinePos, 0);
+        probedCarriagePositions.data[i][1] = currentGeometry.CarriageStepsFromTop(machinePos, 1);
+        probedCarriagePositions.data[i][2] = currentGeometry.CarriageStepsFromTop(machinePos, 2);
 
         initialSumOfSquares += fsquare(probedPoints[i][ZAxis]);
     }
 
-    DebugPrint(probeMotorPositions.Print("Motor positions:"));
-    
+    DebugPrint(probedCarriagePositions.Print("Motor positions:"));
+
     // Do 1 or more Newton-Raphson iterations
+    var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
+    var previousRms = initialRms;
     var iteration = 0;
     var expectedRmsError;
     for (;;) {
@@ -351,7 +396,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
         for (var i = 0; i < numPoints; ++i) {
             for (var j = 0; j < numFactors; ++j) {
                 derivativeMatrix.data[i][j] =
-                    currentGeometry.ComputeDerivative(j, probeMotorPositions.data[i][0], probeMotorPositions.data[i][1], probeMotorPositions.data[i][2]);
+                    currentGeometry.ComputeDerivativeFromStepsFromTop(j, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
             }
         }
 
@@ -409,10 +454,10 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
             var expectedResiduals = new Array(numPoints);
             var sumOfSquares = 0.0;
             for (var i = 0; i < numPoints; ++i) {
-                for (var axis = 0; axis < 3; ++axis) {
-                    probeMotorPositions.data[i][axis] += solution[axis];
+                for (var tower = 0; tower < 3; ++tower) {
+                    probedCarriagePositions.data[i][tower] += solution[tower];
                 }
-                var newZ = currentGeometry.InverseTransform(probeMotorPositions.data[i][0], probeMotorPositions.data[i][1], probeMotorPositions.data[i][2]);
+                var newZ = currentGeometry.InverseTransformFromStepsFromTop(probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
                 corrections[i] = newZ;
                 expectedResiduals[i] = probedPoints[i][ZAxis] + newZ;
                 sumOfSquares += fsquare(expectedResiduals[i]);
@@ -420,7 +465,8 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
             DebugPrint(PrintVector("Expected probe error", expectedResiduals));
-            console.log("Iteration "+iteration+" rms " + expectedRmsError)
+            console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
+            previousRms = expectedRmsError;
         }
 
         // Decide whether to do another iteration Two is slightly better than one, but three doesn't improve things.

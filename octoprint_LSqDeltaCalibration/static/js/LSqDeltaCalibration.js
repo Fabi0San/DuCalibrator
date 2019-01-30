@@ -173,7 +173,7 @@ $(function() {
         console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline")
         var oldGeo = self.geometry();
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, 7));
+        console.log(DoDeltaCalibration(geo, self.probePoints, 10));
 /*        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
         console.log(DoDeltaCalibration(geo, self.probePoints, 6));
         geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
@@ -267,10 +267,14 @@ Radius: 169.72554868070145
 Height: 237.0044192709013
 EndStopOffset: (3) [-0.39453686230441354, 0, -0.16285191854281486]
 TowerOffset: (3) [-0.13306035015788306, -0.2757563138357201, 0]
-StepsPerUnit: (3) [400, 400, 400]
 homedCarriageHeight: 517.1277555680415
-towerX: (3) [-147.1833206009464, 146.57650376099073, -0]
-towerY: (3) [-84.52119267878436, -85.56921420796988, 169.72554868070145]
+
+ToDo:
+ * Understand/fix max height
+ * Incorporate endstops on fwd and bkwd functions
+ * Add belt bias to fwd and bkwd.
+
+
 */
 
 
