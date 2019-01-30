@@ -107,7 +107,6 @@ class DeltaGeometry
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
-        //this.BeltStrech = [1.0, 1.0, 1.0];
         this.RecomputeGeometry();
     }
 
@@ -128,9 +127,9 @@ class DeltaGeometry
     InverseTransformFromStepsFromTop(Sa, Sb, Sc)
     {
         return this.InverseTransform(
-            this.homedCarriageHeight - ((Sa / this.StepsPerUnit[AlphaTower]) - this.EndStopOffset[AlphaTower]),
-            this.homedCarriageHeight - ((Sb / this.StepsPerUnit[BetaTower]) - this.EndStopOffset[BetaTower]),
-            this.homedCarriageHeight - ((Sc / this.StepsPerUnit[GammaTower]) - this.EndStopOffset[GammaTower]));
+            (this.homedCarriageHeight + this.EndStopOffset[AlphaTower]) - (Sa / this.StepsPerUnit[AlphaTower]),
+            (this.homedCarriageHeight + this.EndStopOffset[BetaTower]) - (Sb / this.StepsPerUnit[BetaTower]),
+            (this.homedCarriageHeight + this.EndStopOffset[GammaTower]) - (Sc / this.StepsPerUnit[GammaTower]));
     }
 
     // Inverse transform method, We only need the Z component of the result.
@@ -231,7 +230,7 @@ class DeltaGeometry
                 loParams.DiagonalRod -= perturb;
                 break;
 
-            case 7:
+            case 9:
                 hiParams.StepsPerUnit[AlphaTower] += perturb;
                 loParams.StepsPerUnit[AlphaTower] -= perturb;
                 break;
@@ -241,7 +240,7 @@ class DeltaGeometry
                 loParams.StepsPerUnit[BetaTower] -= perturb;
                 break;
 
-            case 9:
+            case 7:
                 hiParams.StepsPerUnit[GammaTower] += perturb;
                 loParams.StepsPerUnit[GammaTower] -= perturb;
                 break;
@@ -299,6 +298,7 @@ class DeltaGeometry
     {
         var oldCarriageHeightA = this.homedCarriageHeight + this.EndStopOffset[AlphaTower]; // save for later
         var endStopNormal = 0;
+                        //debugger;
 
         // Update endstop adjustments
         this.EndStopOffset[AlphaTower] += v[0];
@@ -318,14 +318,13 @@ class DeltaGeometry
                 if (numFactors >= 7) {
                     this.DiagonalRod += v[6];
 
-                    if (numFactors == 10) {
-                        this.StepsPerUnit[AlphaTower] += v[7];
+                    if (numFactors == 9) {
+                        //this.StepsPerUnit[AlphaTower] += v[7];
                         this.StepsPerUnit[BetaTower] += v[8];
-                        this.StepsPerUnit[GammaTower] += v[9];
+                        this.StepsPerUnit[GammaTower] += v[7];
                     }
                 }
             }
-                       // debugger;
             this.RecomputeGeometry();
         }
 
@@ -357,7 +356,7 @@ function PrintVector(label, v) {
 
 function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
     if (numFactors != 3 && numFactors != 4 && numFactors != 6 && numFactors != 7 && numFactors !=10) {
-        throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7, 10 supported";
+       // throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7, 10 supported";
     }
     var numPoints = probedPoints.length;
 
@@ -399,20 +398,20 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
                     currentGeometry.ComputeDerivativeFromStepsFromTop(j, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
             }
         }
-
+        //debugger;
         DebugPrint(derivativeMatrix.Print("Derivative matrix:"));
 
         // Now build the normal equations for least squares fitting
         var normalMatrix = new Matrix(numFactors, numFactors + 1);
         for (var i = 0; i < numFactors; ++i) {
             for (var j = 0; j < numFactors; ++j) {
-                var temp = 0; //derivativeMatrix.data[0][i] * derivativeMatrix.data[0][j];
+                var temp = 0; 
                 for (var k = 0; k < numPoints; ++k) {
                     temp += derivativeMatrix.data[k][i] * derivativeMatrix.data[k][j];
                 }
                 normalMatrix.data[i][j] = temp;
             }
-            var temp = 0; //derivativeMatrix.data[0][i] * -(probedPoints[0][ZAxis] + corrections[0]);
+            var temp = 0; 
             for (var k = 0; k < numPoints; ++k) {
                 temp += derivativeMatrix.data[k][i] * -(probedPoints[k][ZAxis] + corrections[k]);
             }
@@ -454,9 +453,9 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
             var expectedResiduals = new Array(numPoints);
             var sumOfSquares = 0.0;
             for (var i = 0; i < numPoints; ++i) {
-                for (var tower = 0; tower < 3; ++tower) {
-                    probedCarriagePositions.data[i][tower] += solution[tower];
-                }
+               // for (var tower = 0; tower < 3; ++tower) {
+                    //probedCarriagePositions.data[i][tower] += solution[tower];
+                //}
                 var newZ = currentGeometry.InverseTransformFromStepsFromTop(probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
                 corrections[i] = newZ;
                 expectedResiduals[i] = probedPoints[i][ZAxis] + newZ;
