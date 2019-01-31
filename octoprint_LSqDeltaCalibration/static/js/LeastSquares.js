@@ -230,7 +230,7 @@ class DeltaGeometry
                 loParams.DiagonalRod -= perturb;
                 break;
 
-            case 9:
+            case 7:
                 hiParams.StepsPerUnit[AlphaTower] += perturb;
                 loParams.StepsPerUnit[AlphaTower] -= perturb;
                 break;
@@ -240,7 +240,7 @@ class DeltaGeometry
                 loParams.StepsPerUnit[BetaTower] -= perturb;
                 break;
 
-            case 7:
+            case 9:
                 hiParams.StepsPerUnit[GammaTower] += perturb;
                 loParams.StepsPerUnit[GammaTower] -= perturb;
                 break;
@@ -294,45 +294,38 @@ class DeltaGeometry
     //  Y tower X position adjustment
     //  Z tower Y position adjustment
     //  Diagonal rod length adjustment
-    Adjust(numFactors, v, norm)
+    Adjust(factors, v, norm)
     {
         var oldCarriageHeightA = this.homedCarriageHeight + this.EndStopOffset[AlphaTower]; // save for later
         var endStopNormal = 0;
                         //debugger;
 
         // Update endstop adjustments
-        this.EndStopOffset[AlphaTower] += v[0];
-        this.EndStopOffset[BetaTower] += v[1];
-        this.EndStopOffset[GammaTower] += v[2];
+        var i = 0;
+
+        if (factors[0]) this.EndStopOffset[AlphaTower] += v[i++];
+        if (factors[1]) this.EndStopOffset[BetaTower] += v[i++];
+        if (factors[2]) this.EndStopOffset[GammaTower] += v[i++];
+        if (factors[3]) this.Radius += v[i++];
+        if (factors[4]) this.TowerOffset[AlphaTower] += v[i++];
+        if (factors[5]) this.TowerOffset[BetaTower] += v[i++];
+        if (factors[6]) this.DiagonalRod += v[i++];
+        if (factors[7]) this.StepsPerUnit[AlphaTower] += v[i++];
+        if (factors[8]) this.StepsPerUnit[BetaTower] += v[i++];
+        if (factors[9]) this.StepsPerUnit[GammaTower] += v[i++];
+
         if (norm) {
             endStopNormal = this.NormaliseEndstopAdjustments();
         }
+        this.RecomputeGeometry();
 
-        if (numFactors >= 4) {
-            this.Radius += v[3];
-
-            if (numFactors >= 6) {
-                this.TowerOffset[AlphaTower] += v[4];
-                this.TowerOffset[BetaTower] += v[5];
-
-                if (numFactors >= 7) {
-                    this.DiagonalRod += v[6];
-
-                    if (numFactors == 9) {
-                        //this.StepsPerUnit[AlphaTower] += v[7];
-                        this.StepsPerUnit[BetaTower] += v[8];
-                        this.StepsPerUnit[GammaTower] += v[7];
-                    }
-                }
-            }
-            this.RecomputeGeometry();
-        }
-
+        
         // Adjusting the diagonal and the tower positions affects the homed carriage height.
         // We need to adjust Height to allow for this, to get the change that was requested in the endstop corrections.
-        var heightError = this.homedCarriageHeight + this.EndStopOffset[AlphaTower] - oldCarriageHeightA - v[0];
+        /*var heightError = this.homedCarriageHeight + this.EndStopOffset[AlphaTower] - oldCarriageHeightA - v[0];
         this.Height -= heightError;
-        this.homedCarriageHeight -= heightError;
+        this.homedCarriageHeight -= heightError;*/
+        
     }
 }
 
@@ -354,7 +347,12 @@ function PrintVector(label, v) {
     return rslt;
 }
 
-function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
+function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
+    var numFactors = 0;
+    for (var i = 0; i < 10; i++)
+        if (factors[i])
+            numFactors++;
+
     if (numFactors != 3 && numFactors != 4 && numFactors != 6 && numFactors != 7 && numFactors !=10) {
        // throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7, 10 supported";
     }
@@ -370,10 +368,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
     var initialSumOfSquares = 0.0;
     for (var i = 0; i < numPoints; ++i) {
         corrections[i] = 0.0;
-        var machinePos = [];
-        machinePos.push(probedPoints[i][XAxis]);
-        machinePos.push(probedPoints[i][YAxis]);
-        machinePos.push(0.0);
+        var machinePos = [probedPoints[i][XAxis], probedPoints[i][YAxis], 0.0];
 
         probedCarriagePositions.data[i][0] = currentGeometry.CarriageStepsFromTop(machinePos, 0);
         probedCarriagePositions.data[i][1] = currentGeometry.CarriageStepsFromTop(machinePos, 1);
@@ -393,9 +388,12 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
         // Build a Nx7 matrix of derivatives with respect to xa, xb, yc, za, zb, zc, diagonal.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
         for (var i = 0; i < numPoints; ++i) {
-            for (var j = 0; j < numFactors; ++j) {
-                derivativeMatrix.data[i][j] =
-                    currentGeometry.ComputeDerivativeFromStepsFromTop(j, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
+            var j = 0;
+            for (var k = 0; k < 10; k++) {
+                if (factors[k]) {
+                    derivativeMatrix.data[i][j++] =
+                        currentGeometry.ComputeDerivativeFromStepsFromTop(k, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
+                }
             }
         }
         //debugger;
@@ -446,7 +444,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, numFactors ) {
             DebugPrint(PrintVector("Residuals", residuals));
         }
 
-        currentGeometry.Adjust(numFactors, solution, normalise);
+        currentGeometry.Adjust(factors, solution, normalise);
 
         // Calculate the expected probe heights using the new parameters
         {
