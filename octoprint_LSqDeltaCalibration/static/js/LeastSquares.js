@@ -199,115 +199,23 @@ class DeltaGeometry
     }
 
     
-
-    InsertPerturb(deriv)
-    {
-        var perturb = 0.2;         // perturbation amount in mm or degrees
-        var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
-        var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
-        /*
-        switch (deriv) {
-            case 0:
-                hiParams.EndStopOffset[AlphaTower] += perturb;
-                loParams.EndStopOffset[AlphaTower] -= perturb;
-                break;
-
-            case 1:
-                hiParams.EndStopOffset[BetaTower] += perturb;
-                loParams.EndStopOffset[BetaTower] -= perturb;
-                break;
-
-            case 2:
-                hiParams.EndStopOffset[GammaTower] += perturb;
-                loParams.EndStopOffset[GammaTower] -= perturb;
-                break;
-
-            case 3:
-                hiParams.Radius += perturb;
-                loParams.Radius -= perturb;
-                break;
-
-            case 4:
-                hiParams.TowerOffset[XAxis] += perturb;
-                loParams.TowerOffset[XAxis] -= perturb;
-                break;
-
-            case 5:
-                hiParams.TowerOffset[YAxis] += perturb;
-                loParams.TowerOffset[YAxis] -= perturb;
-                break;
-
-            case 6:
-                hiParams.DiagonalRod += perturb;
-                loParams.DiagonalRod -= perturb;
-                break;
-
-            case 7:
-                hiParams.StepsPerUnit[AlphaTower] += perturb;
-                loParams.StepsPerUnit[AlphaTower] -= perturb;
-                break;
-
-            case 8:
-                hiParams.StepsPerUnit[BetaTower] += perturb;
-                loParams.StepsPerUnit[BetaTower] -= perturb;
-                break;
-
-            case 9:
-                hiParams.StepsPerUnit[GammaTower] += perturb;
-                loParams.StepsPerUnit[GammaTower] -= perturb;
-                break;
-
-            case 10:
-                hiParams.Height += perturb;
-                loParams.Height -= perturb;
-                break;
-                
-
-
-        }*/
-
-        var adjust = Array(10).fill(0.0);
-        adjust[deriv] = perturb;
-        hiParams.Adjust(adjust);
-        adjust[deriv] = -perturb;
-        loParams.Adjust(adjust);
-        //hiParams.RecomputeGeometry();
-        //loParams.RecomputeGeometry();
-
-        return [hiParams, loParams];
-    }
-
-
-    ComputeDerivativeFromStepsFromTop(factors, numFactors, deriv, Sa, Sb, Sc)
+    ComputeDerivativeFromStepsFromTop(factor, Sa, Sb, Sc)
     {
         var perturb = 0.2;         // perturbation amount in mm or degrees
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var adjust = Array(10).fill(0.0);
         var fact = Array(10).fill(true);
-        adjust[deriv] = perturb;
+        adjust[factor] = perturb;
         hiParams.Adjust(fact, adjust, false);
-        adjust[deriv] = -perturb;
+        adjust[factor] = -perturb;
         loParams.Adjust(fact, adjust, false);
-
-        //var perturbed = this.InsertPerturb(deriv);
 
         var zHi = hiParams.InverseTransformFromStepsFromTop(Sa, Sb, Sc);
         var zLo = loParams.InverseTransformFromStepsFromTop(Sa, Sb, Sc);
 
         //debugger;
-        return (zHi - zLo) / (2 * 0.2);
-    }
-
-    ComputeDerivative(deriv, ha, hb, hc)
-    {
-        var perturbed = this.InsertPerturb(deriv);
-
-        var zHi = perturbed[0].InverseTransform(ha, hb, hc);
-        var zLo = perturbed[1].InverseTransform(ha, hb, hc);
-
-        //debugger;
-        return (zHi - zLo) / (2 * 0.2);
+        return (zHi - zLo) / (2 * perturb);
     }
 
     // Make the average of the endstop adjustments zero, or make all emndstop corrections negative, without changing the individual homed carriage heights
@@ -351,7 +259,7 @@ class DeltaGeometry
         if (factors[10]) this.Height += v[i++];
 
         if (norm) {
-            endStopNormal = this.NormaliseEndstopAdjustments();
+            //endStopNormal = this.NormaliseEndstopAdjustments();
         }
         this.RecomputeGeometry();
 
@@ -362,8 +270,8 @@ class DeltaGeometry
         this.Height -= heightError;
         this.homedCarriageHeight -= heightError;*/
 
-        var heightError = this.Transform([0, 0, 0], AlphaTower) - oldConeHeightAlpha;
-       // this.Height -= heightError;
+        var coneStretch = this.Transform([0, 0, 0], AlphaTower) - oldConeHeightAlpha;
+        this.Height -= coneStretch;
         this.RecomputeGeometry();        
     }
 }
@@ -431,7 +339,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             for (var k = 0; k < 10; k++) {
                 if (factors[k]) {
                     derivativeMatrix.data[i][j++] =
-                        currentGeometry.ComputeDerivativeFromStepsFromTop(factors, numFactors, k, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
+                        currentGeometry.ComputeDerivativeFromStepsFromTop(k, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
                 }
             }
         }
