@@ -171,19 +171,19 @@ $(function() {
 
         console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline");
         var oldGeo = self.geometry();
-        var factors = Array(10).fill(true);
-        factors.fill(false, -3);
+        var factors = Array(MaxFactors).fill(true);
+        factors.fill(false, -4);
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-        factors[7] = true; factors[8] = true; factors[9] = false;
+        
         factors.fill(false, 0, 3);
-        factors.fill(true, -3);
+        factors.fill(true, -4, -1);
         
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-
-        factors.fill(true, 0, 3);
-        factors.fill(true, -3);
+        
+        factors.fill(true, 0, -1);
+        //factors.fill(true, -4, -1);
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
 

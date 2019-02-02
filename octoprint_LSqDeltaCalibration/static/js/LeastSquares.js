@@ -12,6 +12,7 @@ const ZAxis = 2;
 const AlphaTower = 0;
 const BetaTower = 1;
 const GammaTower = 2;
+const MaxFactors = 11;
 
 
 function fsquare(x) {
@@ -107,6 +108,12 @@ class DeltaGeometry
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+/*
+        this.StepsToTouch = [
+            ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]),
+            ((this.Height + this.EndStopOffset[BetaTower]) * this.StepsPerUnit[BetaTower]),
+            ((this.Height + this.EndStopOffset[GammaTower]) * this.StepsPerUnit[GammaTower])];
+            */
         this.RecomputeGeometry();
     }
 
@@ -138,8 +145,7 @@ class DeltaGeometry
         this.ConeHeightSteps = [
             this.Transform([0, 0, 0], AlphaTower) * this.StepsPerUnit[AlphaTower],
             this.Transform([0, 0, 0], BetaTower) * this.StepsPerUnit[BetaTower],
-            this.Transform([0, 0, 0], GammaTower) * this.StepsPerUnit[GammaTower],
-        ]
+            this.Transform([0, 0, 0], GammaTower) * this.StepsPerUnit[GammaTower]];
 
         this.TowerHeightSteps = [
             ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]) + this.ConeHeightSteps[AlphaTower],
@@ -204,8 +210,8 @@ class DeltaGeometry
         var perturb = 0.2;         // perturbation amount in mm or degrees
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
-        var adjust = Array(10).fill(0.0);
-        var fact = Array(10).fill(true);
+        var adjust = Array(MaxFactors).fill(0.0);
+        var fact = Array(MaxFactors).fill(true);
         adjust[factor] = perturb;
         hiParams.Adjust(fact, adjust, false);
         adjust[factor] = -perturb;
@@ -242,6 +248,11 @@ class DeltaGeometry
         var endStopNormal = 0;
         var oldConeHeightAlpha = this.Transform([0, 0, 0], AlphaTower);
                         //debugger;
+        var stepsToTouch = [
+            ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]),
+            ((this.Height + this.EndStopOffset[BetaTower]) * this.StepsPerUnit[BetaTower]),
+            ((this.Height + this.EndStopOffset[GammaTower]) * this.StepsPerUnit[GammaTower])];
+
 
         // Update endstop adjustments
         var i = 0;
@@ -259,10 +270,11 @@ class DeltaGeometry
         if (factors[10]) this.Height += v[i++];
 
         if (norm) {
-            //endStopNormal = this.NormaliseEndstopAdjustments();
+            endStopNormal = this.NormaliseEndstopAdjustments();
         }
         this.RecomputeGeometry();
 
+        var heightError = this.InverseTransformFromStepsFromTop(stepsToTouch[0], stepsToTouch[1], stepsToTouch[2]);
         
         // Adjusting the diagonal and the tower positions affects the homed carriage height.
         // We need to adjust Height to allow for this, to get the change that was requested in the endstop corrections.
@@ -271,7 +283,7 @@ class DeltaGeometry
         this.homedCarriageHeight -= heightError;*/
 
         var coneStretch = this.Transform([0, 0, 0], AlphaTower) - oldConeHeightAlpha;
-        this.Height -= coneStretch;
+        this.Height += heightError;
         this.RecomputeGeometry();        
     }
 }
@@ -296,7 +308,7 @@ function PrintVector(label, v) {
 
 function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var numFactors = 0;
-    for (var i = 0; i < 10; i++)
+    for (var i = 0; i < MaxFactors; i++)
         if (factors[i])
             numFactors++;
 
@@ -336,7 +348,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
         var derivativeMatrix = new Matrix(numPoints, numFactors);
         for (var i = 0; i < numPoints; ++i) {
             var j = 0;
-            for (var k = 0; k < 10; k++) {
+            for (var k = 0; k < MaxFactors; k++) {
                 if (factors[k]) {
                     derivativeMatrix.data[i][j++] =
                         currentGeometry.ComputeDerivativeFromStepsFromTop(k, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
