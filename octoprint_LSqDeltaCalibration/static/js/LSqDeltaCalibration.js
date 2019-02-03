@@ -176,15 +176,15 @@ $(function() {
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
         
-        /*
+        
         factors.fill(false, 0, 3);
         factors.fill(true, -4, -1);
         
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
         
-        factors.fill(true, 0, -1);
-        //factors.fill(true, -4, -1);
+        factors.fill(true, 0, -2);
+        factors.fill(false, -2);
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
 

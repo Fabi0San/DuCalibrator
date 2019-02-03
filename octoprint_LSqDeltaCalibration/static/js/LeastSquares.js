@@ -3,7 +3,6 @@
 var debug = false;
 
 var firmware;
-var normalise = true;
 
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
@@ -74,23 +73,6 @@ class Matrix
             solution.push(this.data[i][numRows] / this.data[i][i]);
         }
     }
-
-    Print(tag) {
-        var rslt = tag + " {<br/>";
-        for (var i = 0; i < this.data.length; ++i) {
-            var row = this.data[i];
-            rslt += (row == 0) ? '{' : ' ';
-            for (var j = 0; j < row.length; ++j) {
-                rslt += row[j].toFixed(4);
-                if (j + 1 < row.length) {
-                    rslt += ", ";
-                }
-            }
-            rslt += '<br/>';
-        }
-        rslt += '}';
-        return rslt;
-    }
 }
 
 
@@ -137,6 +119,10 @@ class DeltaGeometry
             this.Height +                       // height from home to carriage at touch in mm
             this.CarriagemmFromBottom([0, 0, 0], tower))   // height from carriage at touch to bed in mm
             * this.StepsPerUnit[tower]);        // convert to steps
+    }
+
+    GetCarriagePosition(position) {
+        return AllTowers.map(tower => this.CarriageStepsFromTop(position, tower));
     }
 
     CarriageStepsFromTop(position, tower)
@@ -255,27 +241,12 @@ function DebugPrint(s) {
     }
 }
 
-function PrintVector(label, v) {
-    var rslt = label + ": {";
-    for (var i = 0; i < v.length; ++i) {
-        rslt += v[i].toFixed(4);
-        if (i + 1 != v.length) {
-            rslt += ", ";
-        }
-    }
-    rslt += "}";
-    return rslt;
-}
-
 function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var numFactors = 0;
     for (var i = 0; i < MaxFactors; i++)
         if (factors[i])
             numFactors++;
 
-    if (numFactors != 3 && numFactors != 4 && numFactors != 6 && numFactors != 7 && numFactors !=10) {
-       // throw "Error: " + numFactors + " factors requested but only 3, 4, 6 and 7, 10 supported";
-    }
     var numPoints = probedPoints.length;
 
     if (numFactors > numPoints) {
@@ -283,22 +254,10 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     }
 
     // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
-    var probedCarriagePositions = new Matrix(numPoints, 3);
-    var corrections = new Array(numPoints);
-    var initialSumOfSquares = 0.0;
-    for (var i = 0; i < numPoints; ++i) {
-        corrections[i] = 0.0;
-        var machinePos = [probedPoints[i][XAxis], probedPoints[i][YAxis], 0.0];
-
-        probedCarriagePositions.data[i][0] = currentGeometry.CarriageStepsFromTop(machinePos, 0);
-        probedCarriagePositions.data[i][1] = currentGeometry.CarriageStepsFromTop(machinePos, 1);
-        probedCarriagePositions.data[i][2] = currentGeometry.CarriageStepsFromTop(machinePos, 2);
-
-        initialSumOfSquares += fsquare(probedPoints[i][ZAxis]);
-    }
-
-    DebugPrint(probedCarriagePositions.Print("Motor positions:"));
-
+    var probedCarriagePositions = probedPoints.map(point => currentGeometry.GetCarriagePosition([point[XAxis], point[YAxis], 0.0]));
+    var corrections = new Array(numPoints).fill(0.0);
+    var initialSumOfSquares =  probedPoints.reduce((acc, val) => acc += fsquare(val[ZAxis]), 0.0);
+    
     // Do 1 or more Newton-Raphson iterations
     var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
     var previousRms = initialRms;
@@ -312,12 +271,10 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             for (var k = 0; k < MaxFactors; k++) {
                 if (factors[k]) {
                     derivativeMatrix.data[i][j++] =
-                        currentGeometry.ComputeDerivative(k, probedCarriagePositions.data[i]);
+                        currentGeometry.ComputeDerivative(k, probedCarriagePositions[i]);
                 }
             }
         }
-        //debugger;
-        DebugPrint(derivativeMatrix.Print("Derivative matrix:"));
 
         // Now build the normal equations for least squares fitting
         var normalMatrix = new Matrix(numFactors, numFactors + 1);
@@ -336,8 +293,6 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             normalMatrix.data[i][numFactors] = temp;
         }
 
-        DebugPrint(normalMatrix.Print("Normal matrix:"));
-
         var solution = [];
         normalMatrix.GaussJordan(solution, numFactors);
         
@@ -347,11 +302,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             }
         }
 
-        DebugPrint(normalMatrix.Print("Solved matrix:"));
-
         if (debug) {
-            DebugPrint(PrintVector("Solution", solution));
-
             // Calculate and display the residuals
             var residuals = [];
             for (var i = 0; i < numPoints; ++i) {
@@ -361,27 +312,22 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
                 }
                 residuals.push(r);
             }
-            DebugPrint(PrintVector("Residuals", residuals));
         }
 
-        currentGeometry.Adjust(factors, solution, normalise);
+        currentGeometry.Adjust(factors, solution, true);
 
         // Calculate the expected probe heights using the new parameters
         {
             var expectedResiduals = new Array(numPoints);
             var sumOfSquares = 0.0;
             for (var i = 0; i < numPoints; ++i) {
-               // for (var tower = 0; tower < 3; ++tower) {
-                    //probedCarriagePositions.data[i][tower] += solution[tower];
-                //}
-                var newZ = currentGeometry.GetZ(probedCarriagePositions.data[i]);
+                var newZ = currentGeometry.GetZ(probedCarriagePositions[i]);
                 corrections[i] = newZ;
                 expectedResiduals[i] = probedPoints[i][ZAxis] + newZ;
                 sumOfSquares += fsquare(expectedResiduals[i]);
             }
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
-            DebugPrint(PrintVector("Expected probe error", expectedResiduals));
             console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms) + " improvement on baseline:" + (expectedRmsError - 0.01839501877423555));
             previousRms = expectedRmsError;
         }
