@@ -176,6 +176,7 @@ $(function() {
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
         
+        /*
         factors.fill(false, 0, 3);
         factors.fill(true, -4, -1);
         
@@ -268,18 +269,26 @@ $(function() {
     }
 
     /*
-     * baseline:
-      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877
 
       Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774377395
       Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.0183950188153732
      
+baseline:
+Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877
 DiagonalRod: 327.5299152950855
 Radius: 169.72554868070145
 Height: 237.0044192709013
 EndStopOffset: (3) [-0.39453686230441354, 0, -0.16285191854281486]
 TowerOffset: (3) [-0.13306035015788306, -0.2757563138357201, 0]
-homedCarriageHeight: 517.1277555680415
+
+New baseline
+Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.01839501877423555
+DiagonalRod: 327.5299427671819
+Radius: 169.72555597850354
+Height: 236.60691919278773
+EndStopOffset: (3) [0.39453696829120705, 0, 0.16285189028267522]
+TowerOffset: (3) [-0.13306038474986437, -0.27575652057546685, 0]
+StepsPerUnit: (3) [400, 400, 400]
 
 ToDo:
  * Understand/fix max height

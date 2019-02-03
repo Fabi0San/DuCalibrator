@@ -13,6 +13,7 @@ const AlphaTower = 0;
 const BetaTower = 1;
 const GammaTower = 2;
 const MaxFactors = 11;
+const AllTowers = [AlphaTower, BetaTower, GammaTower];
 
 
 function fsquare(x) {
@@ -22,18 +23,13 @@ function fsquare(x) {
 class Matrix
 {
     constructor(rows, cols) {
-        this.data = [];
-        for (var i = 0; i < rows; ++i) {
-            var row = [];
-            for (var j = 0; j < cols; ++j) {
-                row.push(0.0);
-            }
-            this.data.push(row)
-        }
+        this.data = new Array(rows);
+        for (var i = 0; i < rows; ++i) 
+            this.data[i] = (new Array(cols)).fill(0.0);
     }
 
     SwapRows(i, j, numCols) {
-        if (i != j) {
+        if (i !== j) {
             for (var k = 0; k < numCols; ++k) {
                 var temp = this.data[i][k];
                 this.data[i][k] = this.data[j][k];
@@ -108,12 +104,7 @@ class DeltaGeometry
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
-/*
-        this.StepsToTouch = [
-            ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]),
-            ((this.Height + this.EndStopOffset[BetaTower]) * this.StepsPerUnit[BetaTower]),
-            ((this.Height + this.EndStopOffset[GammaTower]) * this.StepsPerUnit[GammaTower])];
-            */
+
         this.RecomputeGeometry();
     }
 
@@ -141,44 +132,30 @@ class DeltaGeometry
         this.Q2 = fsquare(this.Q);
         this.D2 = fsquare(this.DiagonalRod);
 
-        // Calculate the base carriage height when the printer is homed.
-        this.ConeHeightSteps = [
-            this.Transform([0, 0, 0], AlphaTower) * this.StepsPerUnit[AlphaTower],
-            this.Transform([0, 0, 0], BetaTower) * this.StepsPerUnit[BetaTower],
-            this.Transform([0, 0, 0], GammaTower) * this.StepsPerUnit[GammaTower]];
-
-        this.TowerHeightSteps = [
-            ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]) + this.ConeHeightSteps[AlphaTower],
-            ((this.Height + this.EndStopOffset[BetaTower]) * this.StepsPerUnit[BetaTower]) + this.ConeHeightSteps[BetaTower],
-            ((this.Height + this.EndStopOffset[GammaTower]) * this.StepsPerUnit[GammaTower]) + this.ConeHeightSteps[GammaTower]];
-
-
-        this.homedCarriageHeight = this.Height - this.InverseTransform(0, 0, 0);
+        this.TowerHeightSteps = AllTowers.map(tower => (
+            this.EndStopOffset[tower] +         // height from endstop to home position in mm
+            this.Height +                       // height from home to carriage at touch in mm
+            this.CarriagemmFromBottom([0, 0, 0], tower))   // height from carriage at touch to bed in mm
+            * this.StepsPerUnit[tower]);        // convert to steps
     }
 
     CarriageStepsFromTop(position, tower)
     {
-        var fromBottom = this.Transform(position, tower) * this.StepsPerUnit[tower];
+        var fromBottom = this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower];
         return this.TowerHeightSteps[tower] - fromBottom;
     }
 
-    Transform(machinePos, tower)
+    CarriagemmFromBottom(machinePos, tower)
     {
         return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
     }
 
-
-    InverseTransformFromStepsFromTop(Sa, Sb, Sc)
+    GetZ(carriagePositions)
     {
-        return this.InverseTransform(
-            (this.TowerHeightSteps[AlphaTower] - Sa) / this.StepsPerUnit[AlphaTower],
-            (this.TowerHeightSteps[BetaTower] - Sb) / this.StepsPerUnit[BetaTower],
-            (this.TowerHeightSteps[GammaTower] - Sc) / this.StepsPerUnit[GammaTower]);
-    }
+        var Ha = (this.TowerHeightSteps[AlphaTower] - carriagePositions[AlphaTower]) / this.StepsPerUnit[AlphaTower];
+        var Hb = (this.TowerHeightSteps[BetaTower] - carriagePositions[BetaTower]) / this.StepsPerUnit[BetaTower];
+        var Hc = (this.TowerHeightSteps[GammaTower] - carriagePositions[GammaTower]) / this.StepsPerUnit[GammaTower];
 
-    // Inverse transform method, We only need the Z component of the result.
-    InverseTransform(Ha, Hb, Hc)
-    {
         var Fa = this.coreFa + fsquare(Ha);
         var Fb = this.coreFb + fsquare(Hb);
         var Fc = this.coreFc + fsquare(Hc);
@@ -205,22 +182,22 @@ class DeltaGeometry
     }
 
     
-    ComputeDerivativeFromStepsFromTop(factor, Sa, Sb, Sc)
+    ComputeDerivative(factor, carriagePositions)
     {
         var perturb = 0.2;         // perturbation amount in mm or degrees
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
         var adjust = Array(MaxFactors).fill(0.0);
-        var fact = Array(MaxFactors).fill(true);
+        var factorMap = Array(MaxFactors).fill(true);
+
         adjust[factor] = perturb;
-        hiParams.Adjust(fact, adjust, false);
+        hiParams.Adjust(factorMap, adjust, false);
         adjust[factor] = -perturb;
-        loParams.Adjust(fact, adjust, false);
+        loParams.Adjust(factorMap, adjust, false);
 
-        var zHi = hiParams.InverseTransformFromStepsFromTop(Sa, Sb, Sc);
-        var zLo = loParams.InverseTransformFromStepsFromTop(Sa, Sb, Sc);
+        var zHi = hiParams.GetZ(carriagePositions);
+        var zLo = loParams.GetZ(carriagePositions);
 
-        //debugger;
         return (zHi - zLo) / (2 * perturb);
     }
 
@@ -230,7 +207,6 @@ class DeltaGeometry
         var eav = Math.min.apply(null, this.EndStopOffset);
         this.EndStopOffset = this.EndStopOffset.map(v => v - eav);
         this.Height += eav;
-        this.homedCarriageHeight += eav;
         return eav;
     }
 
@@ -244,15 +220,7 @@ class DeltaGeometry
     //  Diagonal rod length adjustment
     Adjust(factors, v, norm)
     {
-        //var oldCarriageHeightA = this.homedCarriageHeight + this.EndStopOffset[AlphaTower]; // save for later
-        var endStopNormal = 0;
-        var oldConeHeightAlpha = this.Transform([0, 0, 0], AlphaTower);
-                        //debugger;
-        var stepsToTouch = [
-            ((this.Height + this.EndStopOffset[AlphaTower]) * this.StepsPerUnit[AlphaTower]),
-            ((this.Height + this.EndStopOffset[BetaTower]) * this.StepsPerUnit[BetaTower]),
-            ((this.Height + this.EndStopOffset[GammaTower]) * this.StepsPerUnit[GammaTower])];
-
+        var stepsToTouch = AllTowers.map(tower => (this.Height + this.EndStopOffset[tower]) * this.StepsPerUnit[tower]);
 
         // Update endstop adjustments
         var i = 0;
@@ -270,21 +238,14 @@ class DeltaGeometry
         if (factors[10]) this.Height += v[i++];
 
         if (norm) {
-            endStopNormal = this.NormaliseEndstopAdjustments();
+            this.NormaliseEndstopAdjustments();
         }
         this.RecomputeGeometry();
 
-        var heightError = this.InverseTransformFromStepsFromTop(stepsToTouch[0], stepsToTouch[1], stepsToTouch[2]);
+        var heightError = this.GetZ(stepsToTouch);
         
-        // Adjusting the diagonal and the tower positions affects the homed carriage height.
-        // We need to adjust Height to allow for this, to get the change that was requested in the endstop corrections.
-        /*var heightError = this.homedCarriageHeight + this.EndStopOffset[AlphaTower] - oldCarriageHeightA - v[0];
-        this.Height -= heightError;
-        this.homedCarriageHeight -= heightError;*/
-
-        var coneStretch = this.Transform([0, 0, 0], AlphaTower) - oldConeHeightAlpha;
         this.Height += heightError;
-        this.RecomputeGeometry();        
+        this.RecomputeGeometry();
     }
 }
 
@@ -351,7 +312,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             for (var k = 0; k < MaxFactors; k++) {
                 if (factors[k]) {
                     derivativeMatrix.data[i][j++] =
-                        currentGeometry.ComputeDerivativeFromStepsFromTop(k, probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
+                        currentGeometry.ComputeDerivative(k, probedCarriagePositions.data[i]);
                 }
             }
         }
@@ -413,7 +374,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
                // for (var tower = 0; tower < 3; ++tower) {
                     //probedCarriagePositions.data[i][tower] += solution[tower];
                 //}
-                var newZ = currentGeometry.InverseTransformFromStepsFromTop(probedCarriagePositions.data[i][0], probedCarriagePositions.data[i][1], probedCarriagePositions.data[i][2]);
+                var newZ = currentGeometry.GetZ(probedCarriagePositions.data[i]);
                 corrections[i] = newZ;
                 expectedResiduals[i] = probedPoints[i][ZAxis] + newZ;
                 sumOfSquares += fsquare(expectedResiduals[i]);
@@ -421,7 +382,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
             DebugPrint(PrintVector("Expected probe error", expectedResiduals));
-            console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
+            console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms) + " improvement on baseline:" + (expectedRmsError - 0.01839501877423555));
             previousRms = expectedRmsError;
         }
 
