@@ -2,8 +2,6 @@
 
 var debug = false;
 
-var firmware;
-
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
 const YAxis = 1;
@@ -178,6 +176,7 @@ class DeltaGeometry
 
         adjust[factor] = perturb;
         hiParams.Adjust(factorMap, adjust, false);
+
         adjust[factor] = -perturb;
         loParams.Adjust(factorMap, adjust, false);
 
@@ -206,9 +205,7 @@ class DeltaGeometry
     //  Diagonal rod length adjustment
     Adjust(factors, v, norm)
     {
-        var stepsToTouch = AllTowers.map(tower => (this.Height + this.EndStopOffset[tower]) * this.StepsPerUnit[tower]);
-
-        // Update endstop adjustments
+        var stepsToTouch = GetCarriagePosition([0, 0, 0]); //AllTowers.map(tower => (this.Height + this.EndStopOffset[tower]) * this.StepsPerUnit[tower]);
         var i = 0;
 
         if (factors[0]) this.EndStopOffset[AlphaTower] += v[i++];
