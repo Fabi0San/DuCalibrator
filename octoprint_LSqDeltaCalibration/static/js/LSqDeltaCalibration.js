@@ -172,6 +172,7 @@ $(function() {
         console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline");
         var oldGeo = self.geometry();
         var factors = Array(MaxFactors).fill(true);
+        /*
         factors.fill(false, -4);
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
@@ -182,12 +183,16 @@ $(function() {
         
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-        
+        */
         factors.fill(true, 0, -2);
         factors.fill(false, -2);
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
 
+        factors.fill(true, 0, -1);
+   
+        geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
+        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
 
 /*        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
         console.log(DoDeltaCalibration(geo, self.probePoints, 3));*/

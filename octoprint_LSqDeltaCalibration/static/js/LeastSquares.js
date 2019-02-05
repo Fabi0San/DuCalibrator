@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = false;
+var debug = true;
 
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
@@ -84,6 +84,7 @@ class DeltaGeometry
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+        this.TrimSteps = AllTowers.map(tower => endStopOffset[tower] * stepsPerUnit[tower]);
 
         this.RecomputeGeometry();
     }
@@ -205,7 +206,7 @@ class DeltaGeometry
     //  Diagonal rod length adjustment
     Adjust(factors, v, norm)
     {
-        var stepsToTouch = GetCarriagePosition([0, 0, 0]); //AllTowers.map(tower => (this.Height + this.EndStopOffset[tower]) * this.StepsPerUnit[tower]);
+        var stepsToTouch = this.GetCarriagePosition([0, 0, 0]);
         var i = 0;
 
         if (factors[0]) this.EndStopOffset[AlphaTower] += v[i++];
@@ -272,6 +273,8 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
                 }
             }
         }
+
+        DebugPrint(derivativeMatrix);
 
         // Now build the normal equations for least squares fitting
         var normalMatrix = new Matrix(numFactors, numFactors + 1);
