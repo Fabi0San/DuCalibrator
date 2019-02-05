@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = true;
+var debug = false;
 
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
@@ -80,11 +80,12 @@ class DeltaGeometry
     {
         this.DiagonalRod = diagonalRod;
         this.Radius = radius;
-        this.Height = height;
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+        this.Height = height + this.NormaliseEndstopAdjustments();
         this.TrimSteps = AllTowers.map(tower => endStopOffset[tower] * stepsPerUnit[tower]);
+        
 
         this.RecomputeGeometry();
     }
@@ -135,12 +136,15 @@ class DeltaGeometry
         return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
     }
 
-    GetZ(carriagePositions)
-    {
+    GetZ(carriagePositions) {
         var Ha = (this.TowerHeightSteps[AlphaTower] - carriagePositions[AlphaTower]) / this.StepsPerUnit[AlphaTower];
         var Hb = (this.TowerHeightSteps[BetaTower] - carriagePositions[BetaTower]) / this.StepsPerUnit[BetaTower];
         var Hc = (this.TowerHeightSteps[GammaTower] - carriagePositions[GammaTower]) / this.StepsPerUnit[GammaTower];
+        return this.GetZFromMm(Ha, Hb, Hc);
+    }
 
+    GetZFromMm(Ha, Hb, Hc)
+    {
         var Fa = this.coreFa + fsquare(Ha);
         var Fb = this.coreFb + fsquare(Hb);
         var Fc = this.coreFc + fsquare(Hc);
@@ -176,10 +180,10 @@ class DeltaGeometry
         var factorMap = Array(MaxFactors).fill(true);
 
         adjust[factor] = perturb;
-        hiParams.Adjust(factorMap, adjust, false);
+        hiParams.Adjust(factorMap, adjust, true, false);
 
         adjust[factor] = -perturb;
-        loParams.Adjust(factorMap, adjust, false);
+        loParams.Adjust(factorMap, adjust, true, false);
 
         var zHi = hiParams.GetZ(carriagePositions);
         var zLo = loParams.GetZ(carriagePositions);
@@ -192,7 +196,7 @@ class DeltaGeometry
     {
         var eav = Math.min.apply(null, this.EndStopOffset);
         this.EndStopOffset = this.EndStopOffset.map(v => v - eav);
-        this.Height += eav;
+        //this.Height += eav;
         return eav;
     }
 
@@ -204,9 +208,16 @@ class DeltaGeometry
     //  Y tower X position adjustment
     //  Z tower Y position adjustment
     //  Diagonal rod length adjustment
-    Adjust(factors, v, norm)
+    Adjust(factors, v, norm, adjustHeight = false)
     {
         var stepsToTouch = this.GetCarriagePosition([0, 0, 0]);
+        /*
+        var touch = [0, 0, 0];
+        var carriageHeightsOnTouch = AllTowers.map(tower => this.CarriagemmFromBottom(touch, tower));
+        var heightError = this.GetZFromMm(carriageHeightsOnTouch[0] + v[0], carriageHeightsOnTouch[1] + v[1], carriageHeightsOnTouch[2] + v[2]);
+        //if(adjustHeight)
+           // this.Height -= heightError;
+            */
         var i = 0;
 
         if (factors[0]) this.EndStopOffset[AlphaTower] += v[i++];
@@ -225,11 +236,12 @@ class DeltaGeometry
             this.NormaliseEndstopAdjustments();
         }
         this.RecomputeGeometry();
-
+        
         var heightError = this.GetZ(stepsToTouch);
         
         this.Height += heightError;
         this.RecomputeGeometry();
+        
     }
 }
 
@@ -261,6 +273,8 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var previousRms = initialRms;
     var iteration = 0;
     var expectedRmsError;
+    var bestRmsError = initialRms;
+    var bestGeometry;
     for (;;) {
         // Build a Nx7 matrix of derivatives with respect to xa, xb, yc, za, zb, zc, diagonal.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
@@ -314,7 +328,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             }
         }
 
-        currentGeometry.Adjust(factors, solution, true);
+        currentGeometry.Adjust(factors, solution, true, true);
 
         // Calculate the expected probe heights using the new parameters
         {
@@ -334,12 +348,18 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
 
         // Decide whether to do another iteration Two is slightly better than one, but three doesn't improve things.
         // Alternatively, we could stop when the expected RMS error is only slightly worse than the RMS of the residuals.
+        if (expectedRmsError < bestRmsError) {
+            bestRmsError = expectedRmsError;
+            bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit);
+            iteration = 0;
+        }
+
         ++iteration;
         if (iteration == 20) { break; }
     }
+    console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints) + " after " + bestRmsError);          
 
-    return "Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints)
-            + " after " + expectedRmsError;
+    return bestGeometry;
 }
 
 
