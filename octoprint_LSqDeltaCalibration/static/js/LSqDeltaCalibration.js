@@ -4,7 +4,7 @@
  * Author: Fabio Santos
  * License: AGPLv3
  */
-$(function() {
+$(function () {
     function LsqdeltacalibrationViewModel(parameters) {
         var self = this;
 
@@ -72,7 +72,7 @@ $(function() {
             minZ: undefined,
             maxZ: undefined,
             zScale: 1,
-            normalizeTo : radius /3
+            normalizeTo: radius / 3
         };
 
         self.plot = preparePlot(
@@ -109,9 +109,8 @@ $(function() {
         self.plot.geometry.setDrawRange(0, self.probePoints.length);
         self.plot.geometry.attributes.position.needsUpdate = true;
     }
-         
-    function parseResponse(logLines, self)
-    {
+
+    function parseResponse(logLines, self) {
         stepsPerUnitRegex = /M92 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
         endStopOffsetRegex = /M666 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
         towerOffsetRegex = /M665 .*D(-?\d+\.?\d*) E(-?\d+\.?\d*) H(-?\d+\.?\d*)/;
@@ -172,19 +171,22 @@ $(function() {
         console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline");
         var oldGeo = self.geometry();
         var factors = Array(MaxFactors).fill(true);
-        
-        factors.fill(false, -4);
+
+        factors.fill(false, -1);
         //factors.fill(true, -1);
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-        console.log(geo);
+        var newGeo = DoDeltaCalibration(geo, self.probePoints, factors);
+        console.log(newGeo);
+        console.log("M92 X" + geo.StepsPerUnit[0].toFixed(4) + " Y" + geo.StepsPerUnit[1].toFixed(4) + " Z" + geo.StepsPerUnit[2].toFixed(4));
+        console.log("M666 X" + (geo.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geo.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geo.EndStopOffset[2] * -1).toFixed(4));
+        console.log("M665 D" + geo.TowerOffset[0].toFixed(4) + " E" + geo.TowerOffset[1].toFixed(4) + " H" + geo.TowerOffset[2].toFixed(4));
+        console.log("M665 L" + geo.DiagonalRod.toFixed(4) + " R" + geo.Radius.toFixed(4) + " Z" + geo.Height.toFixed(4));
 
-        
+        /*
         factors.fill(true, -4, -1);
 
         geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-        console.log(geo);
 
         /*
         factors.fill(false, -1);

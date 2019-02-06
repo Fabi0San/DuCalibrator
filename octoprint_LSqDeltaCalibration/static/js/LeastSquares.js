@@ -84,8 +84,6 @@ class DeltaGeometry
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
         this.Height = height + this.NormaliseEndstopAdjustments();
-        this.TrimSteps = AllTowers.map(tower => endStopOffset[tower] * stepsPerUnit[tower]);
-        
 
         this.RecomputeGeometry();
     }
@@ -122,13 +120,8 @@ class DeltaGeometry
     }
 
     GetCarriagePosition(position) {
-        return AllTowers.map(tower => this.CarriageStepsFromTop(position, tower));
-    }
-
-    CarriageStepsFromTop(position, tower)
-    {
-        var fromBottom = this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower];
-        return this.TowerHeightSteps[tower] - fromBottom;
+        return AllTowers.map(tower => this.TowerHeightSteps[tower] -
+            (this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower])); // fromBottom
     }
 
     CarriagemmFromBottom(machinePos, tower)
@@ -140,11 +133,7 @@ class DeltaGeometry
         var Ha = (this.TowerHeightSteps[AlphaTower] - carriagePositions[AlphaTower]) / this.StepsPerUnit[AlphaTower];
         var Hb = (this.TowerHeightSteps[BetaTower] - carriagePositions[BetaTower]) / this.StepsPerUnit[BetaTower];
         var Hc = (this.TowerHeightSteps[GammaTower] - carriagePositions[GammaTower]) / this.StepsPerUnit[GammaTower];
-        return this.GetZFromMm(Ha, Hb, Hc);
-    }
 
-    GetZFromMm(Ha, Hb, Hc)
-    {
         var Fa = this.coreFa + fsquare(Ha);
         var Fb = this.coreFb + fsquare(Hb);
         var Fc = this.coreFc + fsquare(Hc);
@@ -169,7 +158,6 @@ class DeltaGeometry
         }
         return rslt;
     }
-
     
     ComputeDerivative(factor, carriagePositions)
     {
@@ -180,10 +168,10 @@ class DeltaGeometry
         var factorMap = Array(MaxFactors).fill(true);
 
         adjust[factor] = perturb;
-        hiParams.Adjust(factorMap, adjust, true, false);
+        hiParams.Adjust(factorMap, adjust);
 
         adjust[factor] = -perturb;
-        loParams.Adjust(factorMap, adjust, true, false);
+        loParams.Adjust(factorMap, adjust);
 
         var zHi = hiParams.GetZ(carriagePositions);
         var zLo = loParams.GetZ(carriagePositions);
@@ -191,55 +179,36 @@ class DeltaGeometry
         return (zHi - zLo) / (2 * perturb);
     }
 
-    // Make the average of the endstop adjustments zero, or make all emndstop corrections negative, without changing the individual homed carriage heights
+    // Make all emndstop corrections negative
     NormaliseEndstopAdjustments()
     {
         var eav = Math.min.apply(null, this.EndStopOffset);
         this.EndStopOffset = this.EndStopOffset.map(v => v - eav);
-        //this.Height += eav;
         return eav;
     }
 
-    // Perform 3, 4, 6 or 7-factor adjustment.
-    // The input vector contains the following parameters in this order:
-    //  X, Y and Z endstop adjustments
-    //  If we are doing 4-factor adjustment, the next argument is the delta radius. Otherwise:
-    //  X tower X position adjustment
-    //  Y tower X position adjustment
-    //  Z tower Y position adjustment
-    //  Diagonal rod length adjustment
-    Adjust(factors, v, norm, adjustHeight = false)
+    Adjust(factors, corrections)
     {
+        // assuming the robot height is correct and relying on it
         var stepsToTouch = this.GetCarriagePosition([0, 0, 0]);
-        /*
-        var touch = [0, 0, 0];
-        var carriageHeightsOnTouch = AllTowers.map(tower => this.CarriagemmFromBottom(touch, tower));
-        var heightError = this.GetZFromMm(carriageHeightsOnTouch[0] + v[0], carriageHeightsOnTouch[1] + v[1], carriageHeightsOnTouch[2] + v[2]);
-        //if(adjustHeight)
-           // this.Height -= heightError;
-            */
         var i = 0;
 
-        if (factors[0]) this.EndStopOffset[AlphaTower] += v[i++];
-        if (factors[1]) this.EndStopOffset[BetaTower] += v[i++];
-        if (factors[2]) this.EndStopOffset[GammaTower] += v[i++];
-        if (factors[3]) this.Radius += v[i++];
-        if (factors[4]) this.TowerOffset[AlphaTower] += v[i++];
-        if (factors[5]) this.TowerOffset[BetaTower] += v[i++];
-        if (factors[6]) this.DiagonalRod += v[i++];
-        if (factors[7]) this.StepsPerUnit[AlphaTower] += v[i++];
-        if (factors[8]) this.StepsPerUnit[BetaTower] += v[i++];
-        if (factors[9]) this.StepsPerUnit[GammaTower] += v[i++];
-        if (factors[10]) this.Height += v[i++];
+        if (factors[0]) this.EndStopOffset[AlphaTower] += corrections[i++];
+        if (factors[1]) this.EndStopOffset[BetaTower] += corrections[i++];
+        if (factors[2]) this.EndStopOffset[GammaTower] += corrections[i++];
+        if (factors[3]) this.Radius += corrections[i++];
+        if (factors[4]) this.TowerOffset[AlphaTower] += corrections[i++];
+        if (factors[5]) this.TowerOffset[BetaTower] += corrections[i++];
+        if (factors[6]) this.DiagonalRod += corrections[i++];
+        if (factors[7]) this.StepsPerUnit[AlphaTower] += corrections[i++];
+        if (factors[8]) this.StepsPerUnit[BetaTower] += corrections[i++];
+        if (factors[9]) this.StepsPerUnit[GammaTower] += corrections[i++];
+        if (factors[10]) this.Height += corrections[i++];
 
-        if (norm) {
-            this.NormaliseEndstopAdjustments();
-        }
+        this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();
-        
-        var heightError = this.GetZ(stepsToTouch);
-        
-        this.Height += heightError;
+
+        this.Height += this.GetZ(stepsToTouch);
         this.RecomputeGeometry();
         
     }
@@ -328,7 +297,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             }
         }
 
-        currentGeometry.Adjust(factors, solution, true, true);
+        currentGeometry.Adjust(factors, solution);
 
         // Calculate the expected probe heights using the new parameters
         {
@@ -342,12 +311,10 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             }
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
-            console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms) + " improvement on baseline:" + (expectedRmsError - 0.01839501877423555));
+            DebugPrint("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms) + " improvement on baseline:" + (expectedRmsError - 0.01839501877423555));
             previousRms = expectedRmsError;
         }
 
-        // Decide whether to do another iteration Two is slightly better than one, but three doesn't improve things.
-        // Alternatively, we could stop when the expected RMS error is only slightly worse than the RMS of the residuals.
         if (expectedRmsError < bestRmsError) {
             bestRmsError = expectedRmsError;
             bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit);
