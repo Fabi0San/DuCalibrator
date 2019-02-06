@@ -9,7 +9,7 @@ const ZAxis = 2;
 const AlphaTower = 0;
 const BetaTower = 1;
 const GammaTower = 2;
-const MaxFactors = 11;
+const MaxFactors = 10;
 const AllTowers = [AlphaTower, BetaTower, GammaTower];
 
 
@@ -97,21 +97,6 @@ class DeltaGeometry
             [-(this.Radius * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
             +(this.Radius * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
-        this.Xbc = this.towerPositions[GammaTower][XAxis] - this.towerPositions[BetaTower][XAxis];
-        this.Xca = this.towerPositions[AlphaTower][XAxis] - this.towerPositions[GammaTower][XAxis];
-        this.Xab = this.towerPositions[BetaTower][XAxis] - this.towerPositions[AlphaTower][XAxis];
-
-        this.Ybc = this.towerPositions[GammaTower][YAxis] - this.towerPositions[BetaTower][YAxis];
-        this.Yca = this.towerPositions[AlphaTower][YAxis] - this.towerPositions[GammaTower][YAxis];
-        this.Yab = this.towerPositions[BetaTower][YAxis] - this.towerPositions[AlphaTower][YAxis];
-
-        this.coreFa = fsquare(this.towerPositions[AlphaTower][XAxis]) + fsquare(this.towerPositions[AlphaTower][YAxis]);
-        this.coreFb = fsquare(this.towerPositions[BetaTower][XAxis]) + fsquare(this.towerPositions[BetaTower][YAxis]);
-        this.coreFc = fsquare(this.towerPositions[GammaTower][XAxis]) + fsquare(this.towerPositions[GammaTower][YAxis]);
-        this.Q = 2 * (this.Xca * this.Yab - this.Xab * this.Yca);
-        this.Q2 = fsquare(this.Q);
-        this.D2 = fsquare(this.DiagonalRod);
-
         this.TowerHeightSteps = AllTowers.map(tower => (
             this.EndStopOffset[tower] +         // height from endstop to home position in mm
             this.Height +                       // height from home to carriage at touch in mm
@@ -126,37 +111,19 @@ class DeltaGeometry
 
     CarriagemmFromBottom(machinePos, tower)
     {
-        return machinePos[ZAxis] + Math.sqrt(this.D2 - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
+        return machinePos[ZAxis] + Math.sqrt(fsquare(this.DiagonalRod) - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
     }
 
-    GetZ(carriagePositions) {
-        var Ha = (this.TowerHeightSteps[AlphaTower] - carriagePositions[AlphaTower]) / this.StepsPerUnit[AlphaTower];
-        var Hb = (this.TowerHeightSteps[BetaTower] - carriagePositions[BetaTower]) / this.StepsPerUnit[BetaTower];
-        var Hc = (this.TowerHeightSteps[GammaTower] - carriagePositions[GammaTower]) / this.StepsPerUnit[GammaTower];
-
-        var Fa = this.coreFa + fsquare(Ha);
-        var Fb = this.coreFb + fsquare(Hb);
-        var Fc = this.coreFc + fsquare(Hc);
-
-        // Setup PQRSU such that x = -(S - uz)/P, y = (P - Rz)/Q
-        var P = (this.Xbc * Fa) + (this.Xca * Fb) + (this.Xab * Fc);
-        var S = (this.Ybc * Fa) + (this.Yca * Fb) + (this.Yab * Fc);
-
-        var R = 2 * ((this.Xbc * Ha) + (this.Xca * Hb) + (this.Xab * Hc));
-        var U = 2 * ((this.Ybc * Ha) + (this.Yca * Hb) + (this.Yab * Hc));
-
-        var R2 = fsquare(R), U2 = fsquare(U);
-
-        var A = U2 + R2 + this.Q2;
-        var minusHalfB = S * U + P * R + Ha * this.Q2 + this.towerPositions[AlphaTower][XAxis] * U * this.Q - this.towerPositions[AlphaTower][YAxis] * R * this.Q;
-        var C = fsquare(S + this.towerPositions[AlphaTower][XAxis] * this.Q) + fsquare(P - this.towerPositions[AlphaTower][YAxis] * this.Q) + (fsquare(Ha) - this.D2) * this.Q2;
-
-        var rslt = (minusHalfB - Math.sqrt(fsquare(minusHalfB) - A * C)) / A;
-        if (isNaN(rslt)) {
-            debugger;
-            throw "At least one probe point is not reachable. Please correct your delta radius, diagonal rod length, or probe coordniates.";
-        }
-        return rslt;
+    GetZ(carriagePositions)
+    {
+        var p = AllTowers.map(tower => ({
+            x: (this.towerPositions[tower][XAxis]),
+            y: (this.towerPositions[tower][YAxis]),
+            z: ((this.TowerHeightSteps[tower] - carriagePositions[tower]) / this.StepsPerUnit[tower]),
+            r: this.DiagonalRod
+        }));
+        var p4 = trilaterate(p[0], p[1], p[2]);
+        return (p4[1].z);
     }
     
     ComputeDerivative(factor, carriagePositions)
@@ -203,7 +170,6 @@ class DeltaGeometry
         if (factors[7]) this.StepsPerUnit[AlphaTower] += corrections[i++];
         if (factors[8]) this.StepsPerUnit[BetaTower] += corrections[i++];
         if (factors[9]) this.StepsPerUnit[GammaTower] += corrections[i++];
-        if (factors[10]) this.Height += corrections[i++];
 
         this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();

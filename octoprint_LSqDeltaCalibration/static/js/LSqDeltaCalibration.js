@@ -172,7 +172,7 @@ $(function () {
         var oldGeo = self.geometry();
         var factors = Array(MaxFactors).fill(true);
 
-        factors.fill(false, -1);
+        //factors.fill(false, 6,6);
         //factors.fill(true, -1);
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
         var newGeo = DoDeltaCalibration(geo, self.probePoints, factors);
