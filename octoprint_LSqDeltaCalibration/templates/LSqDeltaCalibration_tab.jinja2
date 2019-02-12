@@ -21,10 +21,12 @@
       <div class="control-group">
         <label class="control-label">{{ _('Steps per unit') }} (X,Y,Z):</label>
         <div class="input-append">
-            <input type="number" data-bind="value: geometry().StepsPerUnit[0]" step="0.1" class="input-small"/>
-            <input type="number" data-bind="value: geometry().StepsPerUnit[1]" step="0.1" class="input-small"/>
-            <input type="number" data-bind="value: geometry().StepsPerUnit[2]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().StepsPerUnit[0]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().StepsPerUnit[1]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().StepsPerUnit[2]" step="0.1" class="input-small"/>
+          <span class="add-on">steps</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().StepsPerUnit" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Endstop Offset') }} (X,Y,Z):</label>
@@ -32,7 +34,9 @@
           <input type="number" data-bind="value: geometry().EndStopOffset[0]" step="0.1" class="input-small"/>
           <input type="number" data-bind="value: geometry().EndStopOffset[1]" step="0.1" class="input-small"/>
           <input type="number" data-bind="value: geometry().EndStopOffset[2]" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().EndStopOffset" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Tower Offset') }} (X,Y,Z):</label>
@@ -40,46 +44,71 @@
           <input type="number" data-bind="value: geometry().TowerOffset[0]" step="0.1" class="input-small"/>
           <input type="number" data-bind="value: geometry().TowerOffset[1]" step="0.1" class="input-small"/>
           <input type="number" data-bind="value: geometry().TowerOffset[2]" step="0.1" class="input-small"/>
+          <span class="add-on">deg</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().TowerOffset" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Rod Length') }} :</label>
-        <div class="controls">
+        <div class="input-append">
           <input type="number" data-bind="value: geometry().RodLength" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().RodLength" title="{{ _('Calibrate') }}" />
+      </div>
+      <div class="control-group">
+        <label class="control-label">{{ _('Rod Adjust') }} (X,Y,Z):</label>
+        <div class="input-append">
+          <input type="number" data-bind="value: geometry().RodLengthAdjust[0]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().RodLengthAdjust[1]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().RodLengthAdjust[2]" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
+        </div>
+        <input type="checkbox" data-bind="checked: calibrate().RodLengthAdjust" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Delta Radius') }} :</label>
-        <div class="controls">
+        <div class="input-append">
           <input type="number" data-bind="value: geometry().DeltaRadius" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().DeltaRadius" title="{{ _('Calibrate') }}" />
+      </div>
+      <div class="control-group">
+        <label class="control-label">{{ _('Radius Adjust') }} (X,Y,Z):</label>
+        <div class="input-append">
+          <input type="number" data-bind="value: geometry().DeltaRadiusAdjust[0]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().DeltaRadiusAdjust[1]" step="0.1" class="input-small"/>
+          <input type="number" data-bind="value: geometry().DeltaRadiusAdjust[2]" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
+        </div>
+        <input type="checkbox" data-bind="checked: calibrate().DeltaRadiusAdjust" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Max Height') }} :</label>
-        <div class="controls">
+        <div class="input-append">
           <input type="number" data-bind="value: geometry().MaxHeight" step="0.1" class="input-small"/>
+          <span class="add-on">mm</span>
         </div>
+        <input type="checkbox" data-bind="checked: calibrate().MaxHeight" title="{{ _('Calibrate') }}" />
       </div>
       <div class="control-group">
-            <div class="input-append">
-                <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
-            </div>
-        </div>
-      <div class="control-group">
-        <label class="control-label">{{ _('Probe Radius') }} :</label>
-        <div class="controls">
+        <label class="control-label">{{ _('Probing Radius') }} :</label>
+        <div class="input-append">
           <input type="number" data-bind="value: probeRadius" step="1" class="input-small"/>
         </div>
       </div>
       <div class="control-group">
         <label class="control-label">{{ _('Probe points') }} :</label>
-        <div class="controls">
+        <div class="input-append">
           <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
         </div>
       </div>
       <div class="control-group">
         <div class="input-append">
-          <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
+            <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
+            <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
+            <button class="btn btn-primary" data-bind="click: computeCorrections">{{ _('Compute') }}</button>
         </div>
       </div>
       <div class="input-append" id="surfacePlotDiv" style="
@@ -89,11 +118,9 @@
                                     width: 100%;
                                     height: 400px;">
         </div>
-        <div class="control-group">
-            <div class="input-append">
-                <button class="btn btn-primary" data-bind="click: computeCorrections">{{ _('Compute') }}</button>
-            </div>
-        </div>
+      <div class ="control-group">
+      Probed RMS: <span data-bind="text: ProbedRMS"/> 
+      </div>
         <div class="control-group">
             <span data-bind="text: logText"/>
         </div>

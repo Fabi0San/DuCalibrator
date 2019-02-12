@@ -19,8 +19,22 @@ $(function () {
                 EndStopOffset: [0, 0, 0],
                 TowerOffset: [0, 0, 0],
                 RodLength: undefined,
+                RodLengthAdjust: [0, 0, 0],
                 DeltaRadius: undefined,
+                DeltaRadiusAdjust: [0, 0, 0],
                 MaxHeight: undefined
+            });
+
+        self.calibrate = ko.observable(
+            {
+                StepsPerUnit: true,
+                EndStopOffset: true,
+                TowerOffset: true,
+                RodLength: true,
+                RodLenghtAdjust : false,
+                DeltaRadius: true,
+                DeltaRadiusAdjust : false,
+                MaxHeight: true
             });
 
         self.probeRadius = ko.observable(self.printerProfilesViewModel.currentProfileData().volume.width() / 2);
@@ -37,6 +51,9 @@ $(function () {
         self.isFetchingGeometry = false;
         self.isProbing = false;
         self.probePoints = [];
+
+        self.sumOfSquares = 0;
+        self.ProbedRMS = ko.observable(0);
 
         // test strings
         self.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170.4959", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X-0.488 Y-0.013 Z-0.106", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
@@ -80,6 +97,9 @@ $(function () {
             radius,
             self.probePointCount());
 
+        self.sumOfSquares = 0;
+        self.ProbedRMS(0);
+
         if (self.isPrinterReady())
             OctoPrint.control.sendGcode(`G29.1 P1 I${self.probePointCount()} J${self.probeRadius()}`, null);
         else parseResponse(self.simulatedG29, self);
@@ -103,6 +123,9 @@ $(function () {
 
     function logProbePoint(self, x, y, z) {
         self.probePoints.push([x, y, z]);
+        self.sumOfSquares += z * z;
+        self.ProbedRMS(Math.sqrt(self.sumOfSquares / self.probePoints.length));
+
         self.plot.geometry.scale(1, 1, adjustZScale(self.zScaleInfo, z));
 
         self.plot.geometry.attributes.position.setXYZ(self.probePoints.length - 1, x, y, z * self.zScaleInfo.zScale);
@@ -305,6 +328,20 @@ Height: 236.60691919278773
 EndStopOffset: (3) [0.39453696829120705, 0, 0.16285189028267522]
 TowerOffset: (3) [-0.13306038474986437, -0.27575652057546685, 0]
 StepsPerUnit: (3) [400, 400, 400]
+
+
+M92 X397.9860 Y400.8650 Z398.0130
+M666 X-1.4067 Y0.0000 Z-1.2095
+M665 D0.4435 E-0.0408 H0.0000
+M665 L330.4646 R170.6378 Z236.6437
+Calibrated 10 factors using 500 points, deviation before 0.0185863498299155 after 0.012551446059123492
+DeltaGeometry {DiagonalRod: 331.5587138542035, Radius: 171.03686581310757, EndStopOffset: Array(3), TowerOffset: Array(3), StepsPerUnit: Array(3), …}
+M92 X397.3564 Y401.0728 Z397.0675
+M666 X-1.7687 Y0.0000 Z-1.6914
+M665 D0.5703 E-0.0183 H0.0000
+M665 L331.5582 R171.0368 Z236.6514
+
+
 
 ToDo:
  * Understand/fix max height
