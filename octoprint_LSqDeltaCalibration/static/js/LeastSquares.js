@@ -210,6 +210,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var expectedRmsError;
     var bestRmsError = initialRms;
     var bestGeometry;
+    var bestResiduals;
     for (;;) {
         // Build a Nx7 matrix of derivatives with respect to xa, xb, yc, za, zb, zc, diagonal.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
@@ -284,15 +285,20 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
         if (expectedRmsError < bestRmsError) {
             bestRmsError = expectedRmsError;
             bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit);
+            bestResiduals = expectedResiduals;
             iteration = 0;
         }
 
         ++iteration;
         if (iteration == 20) { break; }
     }
-    console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares/numPoints) + " after " + bestRmsError);          
-
-    return bestGeometry;
+    console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares / numPoints) + " after " + bestRmsError);
+    
+    return {
+        Geometry: bestGeometry,
+        RMS: bestRmsError,
+        Residuals: bestResiduals
+    };
 }
 
 

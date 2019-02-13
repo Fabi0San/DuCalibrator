@@ -53,7 +53,9 @@ $(function () {
         self.probePoints = [];
 
         self.sumOfSquares = 0;
-        self.ProbedRMS = ko.observable(0);
+        self.ProbedRMS = ko.observable((0).toFixed(5));
+        self.CalibratedRMS = ko.observable((0).toFixed(5));
+
 
         // test strings
         self.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170.4959", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X-0.488 Y-0.013 Z-0.106", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
@@ -124,7 +126,7 @@ $(function () {
     function logProbePoint(self, x, y, z) {
         self.probePoints.push([x, y, z]);
         self.sumOfSquares += z * z;
-        self.ProbedRMS(Math.sqrt(self.sumOfSquares / self.probePoints.length));
+        self.ProbedRMS(Math.sqrt(self.sumOfSquares / self.probePoints.length).toFixed(5));
 
         self.plot.geometry.scale(1, 1, adjustZScale(self.zScaleInfo, z));
 
@@ -198,12 +200,14 @@ $(function () {
         //factors.fill(false, 6,6);
         //factors.fill(true, -1);
         var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        var newGeo = DoDeltaCalibration(geo, self.probePoints, factors);
-        console.log(newGeo);
+        var result = DoDeltaCalibration(geo, self.probePoints, factors);
+        geo = result.Geometry;
+        console.log(geo);
         console.log("M92 X" + geo.StepsPerUnit[0].toFixed(4) + " Y" + geo.StepsPerUnit[1].toFixed(4) + " Z" + geo.StepsPerUnit[2].toFixed(4));
         console.log("M666 X" + (geo.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geo.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geo.EndStopOffset[2] * -1).toFixed(4));
         console.log("M665 D" + geo.TowerOffset[0].toFixed(4) + " E" + geo.TowerOffset[1].toFixed(4) + " H" + geo.TowerOffset[2].toFixed(4));
         console.log("M665 L" + geo.DiagonalRod.toFixed(4) + " R" + geo.Radius.toFixed(4) + " Z" + geo.Height.toFixed(4));
+        self.CalibratedRMS(result.RMS.toFixed(5));
 
         /*
         factors.fill(true, -4, -1);
