@@ -76,10 +76,12 @@ class Matrix
 
 class DeltaGeometry
 {
-    constructor(diagonalRod = 0, radius = 0, height = 0, endStopOffset = [0,0,0], towerOffset = [0,0,0], stepsPerUnit = [0,0,0])
+    constructor(diagonalRod = 0, radius = 0, height = 0, endStopOffset = [0,0,0], towerOffset = [0,0,0], stepsPerUnit = [0,0,0], radiusAdjust = [0,0,0], diagonalRodAdjust = [0,0,0])
     {
         this.DiagonalRod = diagonalRod;
+        this.DiagnoalRodAdjust = diagonalRodAdjust.slice();
         this.Radius = radius;
+        this.RadiusAdjust = radiusAdjust.slice();
         this.EndStopOffset = endStopOffset.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();

@@ -25,17 +25,26 @@ $(function () {
                 MaxHeight: undefined
             });
 
-        self.calibrate = ko.observable(
+        self.calibrate =
             {
-                StepsPerUnit: true,
-                EndStopOffset: true,
-                TowerOffset: true,
-                RodLength: true,
-                RodLenghtAdjust : false,
-                DeltaRadius: true,
-                DeltaRadiusAdjust : false,
-                MaxHeight: true
-            });
+                StepsPerUnit: ko.observable(true),
+                EndStopOffset: ko.observable(true),
+                TowerOffset: ko.observable(true),
+                RodLength: ko.observable(true),
+                RodLenghtAdjust: ko.observable(false),
+                DeltaRadius: ko.observable(true),
+                DeltaRadiusAdjust: ko.observable(false),
+                MaxHeight: ko.observable(true)
+            };
+
+        self.calibrate.StepsPerUnit.subscribe(function () { computeCorrections(self); });
+        self.calibrate.EndStopOffset.subscribe(function () { computeCorrections(self); });
+        self.calibrate.TowerOffset.subscribe(function () { computeCorrections(self); });
+        self.calibrate.RodLength.subscribe(function () { computeCorrections(self); });
+        self.calibrate.RodLenghtAdjust.subscribe(function () { computeCorrections(self); });
+        self.calibrate.DeltaRadius.subscribe(function () { computeCorrections(self); });
+        self.calibrate.DeltaRadiusAdjust.subscribe(function () { computeCorrections(self); });
+        self.calibrate.MaxHeight.subscribe(function () { computeCorrections(self); });
 
         self.probeRadius = ko.observable(self.printerProfilesViewModel.currentProfileData().volume.width() / 2);
         self.probePointCount = ko.observable(50);
@@ -43,6 +52,8 @@ $(function () {
         self.logText = ko.observable(undefined);
 
         self.isPrinterReady = ko.observable(false);
+
+        self.newGeometry = ko.observable(new DeltaGeometry());
 
         self.plot = undefined;
 
@@ -113,7 +124,7 @@ $(function () {
         if ((zScaleInfo.minZ === undefined) || (z < zScaleInfo.minZ))
             zScaleInfo.minZ = z;
 
-        if (zScaleInfo.maxZ == zScaleInfo.minZ)
+        if (zScaleInfo.maxZ === zScaleInfo.minZ)
             return 1;
 
         var oldScale = zScaleInfo.zScale;
@@ -192,10 +203,32 @@ $(function () {
     }
 
     function computeCorrections(self) {
-
+        /*var fct = new Map(Object.entries(self.calibrate).map(([k, v]) => [k, v()]));
+        console.log(fct);
+        console.log(fct.RodLength);
+        console.log(fct["RodLength"]);
+        console.log(fct.get("RodLength"));
+        */
         console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline");
         var oldGeo = self.geometry();
         var factors = Array(MaxFactors).fill(true);
+
+        factors = [
+            self.calibrate.EndStopOffset(),
+            self.calibrate.EndStopOffset(),
+            self.calibrate.EndStopOffset(),
+            self.calibrate.DeltaRadius(),
+            self.calibrate.TowerOffset(),
+            self.calibrate.TowerOffset(),
+            self.calibrate.RodLength(),
+            self.calibrate.StepsPerUnit(),
+            self.calibrate.StepsPerUnit(),
+            self.calibrate.StepsPerUnit(),
+/*            self.calibrate.RodLenghtAdjust(),
+            self.calibrate.DeltaRadiusAdjust(),
+            self.calibrate.MaxHeight()*/];
+
+
 
         //factors.fill(false, 6,6);
         //factors.fill(true, -1);
@@ -208,6 +241,8 @@ $(function () {
         console.log("M665 D" + geo.TowerOffset[0].toFixed(4) + " E" + geo.TowerOffset[1].toFixed(4) + " H" + geo.TowerOffset[2].toFixed(4));
         console.log("M665 L" + geo.DiagonalRod.toFixed(4) + " R" + geo.Radius.toFixed(4) + " Z" + geo.Height.toFixed(4));
         self.CalibratedRMS(result.RMS.toFixed(5));
+
+        self.newGeometry(geo);
 
         /*
         factors.fill(true, -4, -1);
