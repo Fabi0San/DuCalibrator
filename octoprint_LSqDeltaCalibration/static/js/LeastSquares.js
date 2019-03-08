@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = false;
+var debug = true;
 
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
@@ -9,7 +9,7 @@ const ZAxis = 2;
 const AlphaTower = 0;
 const BetaTower = 1;
 const GammaTower = 2;
-const MaxFactors = 10;
+const MaxFactors = 16;
 const AllTowers = [AlphaTower, BetaTower, GammaTower];
 
 
@@ -92,12 +92,12 @@ class DeltaGeometry
 
     RecomputeGeometry() {
         this.towerPositions = [
-            [-(this.Radius * Math.cos((30 + this.TowerOffset[AlphaTower]) * degreesToRadians)),
-            -(this.Radius * Math.sin((30 + this.TowerOffset[AlphaTower]) * degreesToRadians))],
-            [+(this.Radius * Math.cos((30 - this.TowerOffset[BetaTower]) * degreesToRadians)),
-            -(this.Radius * Math.sin((30 - this.TowerOffset[BetaTower]) * degreesToRadians))],
-            [-(this.Radius * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
-            +(this.Radius * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
+            [-((this.Radius + this.RadiusAdjust[AlphaTower]) * Math.cos((30 + this.TowerOffset[AlphaTower]) * degreesToRadians)),
+            -((this.Radius + this.RadiusAdjust[AlphaTower]) * Math.sin((30 + this.TowerOffset[AlphaTower]) * degreesToRadians))],
+            [+((this.Radius + this.RadiusAdjust[BetaTower]) * Math.cos((30 - this.TowerOffset[BetaTower]) * degreesToRadians)),
+            -((this.Radius + this.RadiusAdjust[BetaTower]) * Math.sin((30 - this.TowerOffset[BetaTower]) * degreesToRadians))],
+            [-((this.Radius + this.RadiusAdjust[GammaTower]) * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
+            +((this.Radius + this.RadiusAdjust[GammaTower]) * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
         this.TowerHeightSteps = AllTowers.map(tower => (
             this.EndStopOffset[tower] +         // height from endstop to home position in mm
@@ -113,7 +113,7 @@ class DeltaGeometry
 
     CarriagemmFromBottom(machinePos, tower)
     {
-        return machinePos[ZAxis] + Math.sqrt(fsquare(this.DiagonalRod) - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
+        return machinePos[ZAxis] + Math.sqrt(fsquare(this.DiagonalRod + this.DiagnoalRodAdjust[tower]) - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
     }
 
     GetZ(carriagePositions)
@@ -122,7 +122,7 @@ class DeltaGeometry
             x: (this.towerPositions[tower][XAxis]),
             y: (this.towerPositions[tower][YAxis]),
             z: ((this.TowerHeightSteps[tower] - carriagePositions[tower]) / this.StepsPerUnit[tower]),
-            r: this.DiagonalRod
+            r: this.DiagonalRod + this.DiagnoalRodAdjust[tower]
         }));
         var p4 = trilaterate(p[0], p[1], p[2]);
         return (p4[1].z);
@@ -131,8 +131,8 @@ class DeltaGeometry
     ComputeDerivative(factor, carriagePositions)
     {
         var perturb = 0.2;         // perturbation amount in mm or degrees
-        var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
-        var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit);
+        var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagnoalRodAdjust);
+        var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagnoalRodAdjust);
         var adjust = Array(MaxFactors).fill(0.0);
         var factorMap = Array(MaxFactors).fill(true);
 
@@ -172,6 +172,12 @@ class DeltaGeometry
         if (factors[7]) this.StepsPerUnit[AlphaTower] += corrections[i++];
         if (factors[8]) this.StepsPerUnit[BetaTower] += corrections[i++];
         if (factors[9]) this.StepsPerUnit[GammaTower] += corrections[i++];
+        if (factors[10]) this.RadiusAdjust[AlphaTower] += corrections[i++];
+        if (factors[11]) this.RadiusAdjust[BetaTower]  += corrections[i++];
+        if (factors[12]) this.RadiusAdjust[GammaTower] += corrections[i++];
+        if (factors[13]) this.DiagnoalRodAdjust[AlphaTower] += corrections[i++];
+        if (factors[14]) this.DiagnoalRodAdjust[BetaTower] += corrections[i++];
+        if (factors[15]) this.DiagnoalRodAdjust[GammaTower] += corrections[i++];
 
         this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();
@@ -211,8 +217,8 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var iteration = 0;
     var expectedRmsError;
     var bestRmsError = initialRms;
-    var bestGeometry;
-    var bestResiduals;
+    var bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit, currentGeometry.RadiusAdjust, currentGeometry.DiagnoalRodAdjust);
+    var bestResiduals = probedPoints;
     for (;;) {
         // Build a Nx7 matrix of derivatives with respect to xa, xb, yc, za, zb, zc, diagonal.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
@@ -286,7 +292,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
 
         if (expectedRmsError < bestRmsError) {
             bestRmsError = expectedRmsError;
-            bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit);
+            bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit, currentGeometry.RadiusAdjust, currentGeometry.DiagnoalRodAdjust);
             bestResiduals = expectedResiduals;
             iteration = 0;
         }
