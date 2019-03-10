@@ -87,6 +87,10 @@ class DeltaGeometry
         this.StepsPerUnit = stepsPerUnit.slice();
         this.Height = height + this.NormaliseEndstopAdjustments();
 
+        //Endstops to steps unit
+        // hegh too?
+        // cant normalize ES by steps
+
         this.RecomputeGeometry();
     }
 
@@ -182,7 +186,7 @@ class DeltaGeometry
         this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();
 
-        this.Height += this.GetZ(stepsToTouch);
+        this.Height -= this.GetZ(stepsToTouch);
         this.RecomputeGeometry();
         
     }
