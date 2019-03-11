@@ -76,16 +76,17 @@ class Matrix
 
 class DeltaGeometry
 {
-    constructor(diagonalRod = 0, radius = 0, height = 0, endStopOffset = [0,0,0], towerOffset = [0,0,0], stepsPerUnit = [0,0,0], radiusAdjust = [0,0,0], diagonalRodAdjust = [0,0,0])
+    constructor(diagonalRod = 0, radius = 0, height = 0, endStopOffset = [0,0,0], towerOffset = [0,0,0], stepsPerUnit = [1,1,1], radiusAdjust = [0,0,0], diagonalRodAdjust = [0,0,0])
     {
         this.DiagonalRod = diagonalRod;
         this.DiagnoalRodAdjust = diagonalRodAdjust.slice();
         this.Radius = radius;
         this.RadiusAdjust = radiusAdjust.slice();
-        this.EndStopOffset = endStopOffset.slice();
+        this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
-        this.Height = height + this.NormaliseEndstopAdjustments();
+        this.HeightSteps = height*this.StepsPerUnit[AlphaTower]; //+ this.NormaliseEndstopAdjustments();
+
 
         //Endstops to steps unit
         // hegh too?
@@ -103,11 +104,18 @@ class DeltaGeometry
             [-((this.Radius + this.RadiusAdjust[GammaTower]) * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
             +((this.Radius + this.RadiusAdjust[GammaTower]) * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
+        // Up the mm properties from the calibrated steps.
+        this.Height = this.HeightSteps / this.StepsPerUnit[AlphaTower];
+        this.EndStopOffset = this.EndStopOffsetSteps.map((offset, tower) => offset / this.StepsPerUnit[tower]);
+
+        // compute tower heigh in steps
         this.TowerHeightSteps = AllTowers.map(tower => (
             this.EndStopOffset[tower] +         // height from endstop to home position in mm
             this.Height +                       // height from home to carriage at touch in mm
             this.CarriagemmFromBottom([0, 0, 0], tower))   // height from carriage at touch to bed in mm
             * this.StepsPerUnit[tower]);        // convert to steps
+
+
     }
 
     GetCarriagePosition(position) {
@@ -166,9 +174,9 @@ class DeltaGeometry
         var stepsToTouch = this.GetCarriagePosition([0, 0, 0]);
         var i = 0;
 
-        if (factors[0]) this.EndStopOffset[AlphaTower] += corrections[i++];
-        if (factors[1]) this.EndStopOffset[BetaTower] += corrections[i++];
-        if (factors[2]) this.EndStopOffset[GammaTower] += corrections[i++];
+        if (factors[0]) this.EndStopOffsetSteps[AlphaTower] += corrections[i++];
+        if (factors[1]) this.EndStopOffsetSteps[BetaTower] += corrections[i++];
+        if (factors[2]) this.EndStopOffsetSteps[GammaTower] += corrections[i++];
         if (factors[3]) this.Radius += corrections[i++];
         if (factors[4]) this.TowerOffset[AlphaTower] += corrections[i++];
         if (factors[5]) this.TowerOffset[BetaTower] += corrections[i++];
@@ -183,7 +191,7 @@ class DeltaGeometry
         if (factors[14]) this.DiagnoalRodAdjust[BetaTower] += corrections[i++];
         if (factors[15]) this.DiagnoalRodAdjust[GammaTower] += corrections[i++];
 
-        this.NormaliseEndstopAdjustments();
+        //this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();
 
         this.Height -= this.GetZ(stepsToTouch);
