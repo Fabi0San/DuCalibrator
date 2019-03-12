@@ -1,6 +1,6 @@
 // Delta calibration script
 
-var debug = true;
+var debug = false;
 
 const degreesToRadians = Math.PI / 180.0;
 const XAxis = 0;
@@ -82,9 +82,10 @@ class DeltaGeometry
         this.DiagnoalRodAdjust = diagonalRodAdjust.slice();
         this.Radius = radius;
         this.RadiusAdjust = radiusAdjust.slice();
-        this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+
+        this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
         this.HeightSteps = height*this.StepsPerUnit[AlphaTower]; //+ this.NormaliseEndstopAdjustments();
 
 
@@ -191,12 +192,26 @@ class DeltaGeometry
         if (factors[14]) this.DiagnoalRodAdjust[BetaTower] += corrections[i++];
         if (factors[15]) this.DiagnoalRodAdjust[GammaTower] += corrections[i++];
 
-        //this.NormaliseEndstopAdjustments();
         this.RecomputeGeometry();
 
-        this.Height -= this.GetZ(stepsToTouch);
+        this.Height += this.NormaliseEndstopAdjustments();
+        this.EndStopOffsetSteps = this.EndStopOffset.map((offset, tower) => offset * this.StepsPerUnit[tower]);
+        this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
+
         this.RecomputeGeometry();
-        
+        /*
+        var zError = this.GetZ(stepsToTouch);
+        if (Math.abs(zError) > 1) {
+          //  debugger;
+        }
+
+        this.Height -= zError;
+        this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower]; //+ this.NormaliseEndstopAdjustments();
+
+
+
+        this.RecomputeGeometry();
+        */
     }
 }
 
