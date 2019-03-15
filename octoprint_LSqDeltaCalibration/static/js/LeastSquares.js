@@ -85,13 +85,9 @@ class DeltaGeometry
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
 
+        // these two need to be held in steps so steps/mm adjustment stays true
         this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
-        this.HeightSteps = height*this.StepsPerUnit[AlphaTower]; //+ this.NormaliseEndstopAdjustments();
-
-
-        //Endstops to steps unit
-        // hegh too?
-        // cant normalize ES by steps
+        this.HeightSteps = height * this.StepsPerUnit[AlphaTower];
 
         this.RecomputeGeometry();
     }
@@ -115,8 +111,6 @@ class DeltaGeometry
             this.Height +                       // height from home to carriage at touch in mm
             this.CarriagemmFromBottom([0, 0, 0], tower))   // height from carriage at touch to bed in mm
             * this.StepsPerUnit[tower]);        // convert to steps
-
-
     }
 
     GetCarriagePosition(position) {
@@ -143,7 +137,7 @@ class DeltaGeometry
     
     ComputeDerivative(factor, carriagePositions)
     {
-        var perturb = 0.2;         // perturbation amount in mm or degrees
+        var perturb = 0.2;
         var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagnoalRodAdjust);
         var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagnoalRodAdjust);
         var adjust = Array(MaxFactors).fill(0.0);
@@ -161,7 +155,7 @@ class DeltaGeometry
         return (zHi - zLo) / (2 * perturb);
     }
 
-    // Make all emndstop corrections negative
+    // Make all emndstop corrections positive and as small as possible
     NormaliseEndstopAdjustments()
     {
         var eav = Math.min.apply(null, this.EndStopOffset);
@@ -171,8 +165,6 @@ class DeltaGeometry
 
     Adjust(factors, corrections)
     {
-        // assuming the robot height is correct and relying on it
-        var stepsToTouch = this.GetCarriagePosition([0, 0, 0]);
         var i = 0;
 
         if (factors[0]) this.EndStopOffsetSteps[AlphaTower] += corrections[i++];
@@ -199,19 +191,6 @@ class DeltaGeometry
         this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
 
         this.RecomputeGeometry();
-        /*
-        var zError = this.GetZ(stepsToTouch);
-        if (Math.abs(zError) > 1) {
-          //  debugger;
-        }
-
-        this.Height -= zError;
-        this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower]; //+ this.NormaliseEndstopAdjustments();
-
-
-
-        this.RecomputeGeometry();
-        */
     }
 }
 
@@ -247,7 +226,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
     var bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit, currentGeometry.RadiusAdjust, currentGeometry.DiagnoalRodAdjust);
     var bestResiduals = probedPoints;
     for (;;) {
-        // Build a Nx7 matrix of derivatives with respect to xa, xb, yc, za, zb, zc, diagonal.
+        // Build a matrix of derivatives.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
         for (var i = 0; i < numPoints; ++i) {
             var j = 0;
