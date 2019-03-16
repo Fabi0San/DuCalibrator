@@ -8,6 +8,8 @@ $(function () {
     function LsqdeltacalibrationViewModel(parameters) {
         var self = this;
 
+        self.trialNumber = 0;
+
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
         self.settingsViewModel = parameters[0];
@@ -79,15 +81,20 @@ $(function () {
             "Recv: PROBE: X-70, Y-40, Z-10",
             "Recv: PROBE: X70, Y-40, Z-10",
             "Recv: ok"];
-          */  
+          */
+
         // ui commands
         self.probeBed = function () { probeBed(self); };
         self.fetchGeometry = function () { fetchGeometry(self); };
-        self.computeCorrections = function () { computeCorrections(self); }
+        self.computeCorrections = function () { computeCorrections(self); };
+
+        self.probedGeometries = ko.observableArray([]);
 
         //hooks
         self.fromCurrentData = function (data) { processNewPrinterData(data, self); };
         self.fromHistoryData = function (data) { processOldPrinterData(data, self); };
+        self.LoadGeometry = function (data) { LoadGeometry(data, self); };
+
     }
 
     function processNewPrinterData(data, self) {
@@ -124,6 +131,8 @@ $(function () {
         if (self.isPrinterReady())
             OctoPrint.control.sendGcode(`G29.1 P1 I${self.probePointCount()} J${self.probeRadius()}`, null);
         else parseResponse(self.simulatedG29, self);
+
+
     }
 
     function adjustZScale(zScaleInfo, z) {
@@ -195,7 +204,11 @@ $(function () {
             }
 
             if (logLines[i] == "Recv: ok") {
-                self.isProbing = false;
+                if (self.isProbing) {
+                    self.isProbing = false;
+                    onProbingFinished(self);
+                }
+
                 self.isFetchingGeometry = false;
             }
         }
@@ -209,6 +222,23 @@ $(function () {
             OctoPrint.control.sendGcode("M503", null);
         else parseResponse(self.simulatedM503, self);
     }
+
+    function LoadGeometry(data, self) {
+        debugger;
+        self.probePoints = data.Points;
+        self.ProbedRMS = data.RMS;
+    }
+
+    function onProbingFinished(self) {
+        self.probedGeometries.unshift({
+            Name: "Trial #"+ self.trialNumber++ ,
+            Timestamp: new Date().toLocaleString(),
+            RMS: self.ProbedRMS(),
+            Points : self.probePoints,
+        })
+
+    }
+
 
     function computeCorrections(self) {
         /*var fct = new Map(Object.entries(self.calibrate).map(([k, v]) => [k, v()]));
