@@ -224,9 +224,9 @@ $(function () {
     }
 
     function LoadGeometry(data, self) {
-        debugger;
+        //debugger;
         self.probePoints = data.Points;
-        self.ProbedRMS = data.RMS;
+        self.ProbedRMS(data.RMS);
     }
 
     function onProbingFinished(self) {
