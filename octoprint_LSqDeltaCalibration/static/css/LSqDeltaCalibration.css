@@ -1,1 +1,12 @@
 /* TODO: Have your plugin's CSS files generated to here. */
+a.collapsed .fa-caret-down {
+    display: none;
+}
+
+a.collapsed .fa-caret-right {
+    display: inline-block;
+}
+
+a .fa-caret-right {
+    display: none;
+}
