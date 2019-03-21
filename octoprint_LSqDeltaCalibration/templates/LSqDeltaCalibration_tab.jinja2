@@ -4,10 +4,10 @@
       <a href="#calibrate_tab" data-toggle="tab">{{ _('Calibrate') }}</a>
     </li>
     <li>
-      <a href="#current_geometry_tab" data-toggle="tab">{{ _('Current Geometry') }}</a>
+      <a href="#settings_tab" data-toggle="tab">{{ _('Settings') }}</a>
     </li>
     <li>
-      <a href="#settings_tab" data-toggle="tab">{{ _('Settings') }}</a>
+      <a href="#about_tab" data-toggle="tab">{{ _('About') }}</a>
     </li>
   </ul>
 
@@ -27,15 +27,13 @@
               <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
           </div>
       </div>
-
-    
     </div>
 
     <div id="calibrate_tab" class="tab-pane active">
 
       <div class="control-group">
           <div class="input-append">
-              <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
+              <button class="btn btn-primary" data-bind="click: fetchGeometry" title="Fetches the current geometry from the machine.">{{ _('Fetch Geometry') }}</button>
               <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
               <button class="btn btn-primary" data-bind="click: computeCorrections">{{ _('Compute') }}</button>
           </div>
@@ -44,6 +42,7 @@
       <h4>
         <a href="#collapseGeometry" data-toggle="collapse" class="collapsed"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Current Geometry') }}
+        <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
       </h4>
       <div class="row-fluid collapse" id="collapseGeometry">
         <div data-bind="visible: !isPrinterReady()" class="message warning">
@@ -117,8 +116,9 @@
             </div>
           </div>
           <div class="control-group">
-            <div class="input-append">
-              <button class="btn btn-primary" data-bind="click: fetchGeometry">{{ _('Fetch Geometry') }}</button>
+            <div class="btn-group">
+              <button class="btn btn-primary" data-bind="click: fetchGeometry" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
+              <button class="btn btn-primary" data-bind="click: fetchGeometry" title="{{ _('Write the above geometry to the machine.') }}">{{ _('Send Geometry') }}</button>
               <button class="btn btn-primary" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
               <button class="btn btn-primary" data-bind="click: computeCorrections">{{ _('Compute') }}</button>
             </div>
@@ -129,7 +129,8 @@
 
       <h4>
         <a href="#collapsePlot" data-toggle="collapse"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-        {{ _('Plot') }}
+        {{ _('Probing') }}
+        <button class="btn btn-primary pull-right" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
       </h4>
       <div class="row-fluid collapse in" id="collapsePlot">
         <div class="row-fluid collapse" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>
@@ -147,7 +148,8 @@
 
       <h4>
         <a href="#collapseCalibration" data-toggle="collapse" class="collapsed"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-        {{ _('Calibration factors') }}
+        {{ _('Calibration') }}
+        <button class="btn btn-primary pull-right" data-bind="click: computeCorrections">{{ _('Calibrate') }}</button>
       </h4>
       <div class="row-fluid collapse" id="collapseCalibration">
         <div class="row-fluid">
@@ -244,7 +246,7 @@
       <div class="row-fluid" data-bind="visible: probedGeometries().length > 0">
         <h4>
           <a href="#collapseGeoHistry" data-toggle="collapse" class="collapsed" ><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-          {{ _('Probed Geometries') }}</h4>
+          {{ _('Probing history') }}</h4>
 
         <div class="row-fluid collapse" id="collapseGeoHistry">
           <table class="table table-striped table-hover table-condensed table-hover" id="settings_deltaCalibration_probedGeometries" data-bind="bvisible: printerProfiles.profiles.items().length > 0" style="bdisplay: none">
