@@ -15,6 +15,12 @@ $(function () {
         self.settingsViewModel = parameters[0];
         self.printerProfilesViewModel = parameters[1];
 
+        self.plotDivElement = $("#surfacePlotDiv")[0];
+
+        self.currentGeometry = ko.observable(new DeltaGeometry());
+
+        /*
+
         self.geometry = ko.observable(
             {
                 StepsPerUnit: [],
@@ -26,6 +32,7 @@ $(function () {
                 DeltaRadiusAdjust: [0, 0, 0],
                 MaxHeight: undefined
             });
+            */
 
         self.calibrate =
             {
@@ -107,9 +114,20 @@ $(function () {
         self.isPrinterReady(data.state.flags.ready);
     }
 
+    function resetProbeData(self) {
+        self.probePoints = [];
+        self.ProbedRMS(0);
+        if (self.plot) {
+            self.plot.geometry.dispose();
+            self.plot = null;
+        }
+
+        if (self.plotDivElement.firstChild) self.plotDivElement.removeChild(self.plotDivElement.firstChild);
+    }
+
     function probeBed(self) {
         self.isProbing = true;
-        self.probePoints = [];
+        resetProbeData(self);
 
         var radius = self.printerProfilesViewModel.currentProfileData().volume.width() / 2;
 
@@ -120,8 +138,9 @@ $(function () {
             normalizeTo: radius / 3
         };
 
+
         self.plot = preparePlot(
-            document.getElementById("surfacePlotDiv"),
+            self.plotDivElement, //document.getElementById("surfacePlotDiv"), //TODO: FIX THIS HACK
             radius,
             self.probePointCount());
 
@@ -171,7 +190,7 @@ $(function () {
         maxHeightRegex = /M665 .*Z(-?\d+\.?\d*)/;
         probePointRegex = /PROBE: X(-?\d+\.?\d*), Y(-?\d+\.?\d*), Z(-?\d+\.?\d*)/;
 
-        var newGeometry = self.geometry();
+        var newGeometry = self.currentGeometry();
         for (var i = 0; i < logLines.length; i++) {
 
             if (self.isFetchingGeometry) {
@@ -188,12 +207,12 @@ $(function () {
                 }
 
                 if (match = rodLenAndRadiusRegex.exec(logLines[i])) {
-                    newGeometry.RodLength = parseFloat(match[1]);
-                    newGeometry.DeltaRadius = parseFloat(match[2]);
+                    newGeometry.DiagonalRod = parseFloat(match[1]);
+                    newGeometry.Radius = parseFloat(match[2]);
                 }
 
                 if (match = maxHeightRegex.exec(logLines[i])) {
-                    newGeometry.MaxHeight = parseFloat(match[1]);
+                    newGeometry.Height = parseFloat(match[1]);
                 }
             }
 
@@ -203,20 +222,24 @@ $(function () {
                 }
             }
 
-            if (logLines[i] == "Recv: ok") {
+            if (logLines[i] === "Recv: ok") {
                 if (self.isProbing) {
                     self.isProbing = false;
                     onProbingFinished(self);
                 }
 
-                self.isFetchingGeometry = false;
+                if (self.isFetchingGeometry) {
+                    self.isFetchingGeometry = false;
+                    onFetchGeoFinished(self);
+                }
             }
         }
 
-        self.geometry(newGeometry);
+        self.currentGeometry(newGeometry);
     }
 
     function fetchGeometry(self) {
+        resetProbeData(self);
         self.isFetchingGeometry = true;
         if (self.isPrinterReady())
             OctoPrint.control.sendGcode("M503", null);
@@ -231,11 +254,14 @@ $(function () {
 
     function onProbingFinished(self) {
         self.probedGeometries.unshift({
-            Name: "Trial #"+ self.trialNumber++ ,
+            Name: "Trial #" + self.trialNumber++,
             Timestamp: new Date().toLocaleString(),
             RMS: self.ProbedRMS(),
-            Points : self.probePoints,
-        })
+            Points: self.probePoints,
+        });
+    }
+
+    function onFetchGeoFinished(self) {
 
     }
 
