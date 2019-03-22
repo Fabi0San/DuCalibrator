@@ -10,8 +10,6 @@ $(function () {
 
         self.trialNumber = 0;
 
-        // assign the injected parameters, e.g.:
-        // self.loginStateViewModel = parameters[0];
         self.settingsViewModel = parameters[0];
         self.printerProfilesViewModel = parameters[1];
 
@@ -19,31 +17,16 @@ $(function () {
 
         self.currentGeometry = ko.observable(new DeltaGeometry());
 
-        /*
-
-        self.geometry = ko.observable(
-            {
-                StepsPerUnit: [],
-                EndStopOffset: [0, 0, 0],
-                TowerOffset: [0, 0, 0],
-                RodLength: undefined,
-                RodLengthAdjust: [0, 0, 0],
-                DeltaRadius: undefined,
-                DeltaRadiusAdjust: [0, 0, 0],
-                MaxHeight: undefined
-            });
-            */
-
         self.calibrate =
             {
                 StepsPerUnit: ko.observable(false),
                 EndStopOffset: ko.observable(true),
-            TowerOffset: ko.observable(false),
-            RodLength: ko.observable(false),
-            RodLenghtAdjust: ko.observable(false),
-            DeltaRadius: ko.observable(false),
+                TowerOffset: ko.observable(true),
+                RodLength: ko.observable(true),
+                RodLenghtAdjust: ko.observable(false),
+                DeltaRadius: ko.observable(true),
                 DeltaRadiusAdjust: ko.observable(false),
-            MaxHeight: ko.observable(false)
+                MaxHeight: ko.observable(true)
             };
 
         self.calibrate.StepsPerUnit.subscribe(function () { computeCorrections(self); });
@@ -116,7 +99,7 @@ $(function () {
 
     function resetProbeData(self) {
         self.probePoints = [];
-        self.ProbedRMS(0);
+        self.ProbedRMS((0).toFixed(5));
         if (self.plot) {
             self.plot.geometry.dispose();
             self.plot = null;
@@ -140,7 +123,7 @@ $(function () {
 
 
         self.plot = preparePlot(
-            self.plotDivElement, //document.getElementById("surfacePlotDiv"), //TODO: FIX THIS HACK
+            self.plotDivElement,
             radius,
             self.probePointCount());
 
@@ -185,6 +168,7 @@ $(function () {
     function parseResponse(logLines, self) {
         stepsPerUnitRegex = /M92 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
         endStopOffsetRegex = /M666 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
+        radiusOffsetRegex = /M665 .*A(-?\d+\.?\d*) B(-?\d+\.?\d*) C(-?\d+\.?\d*).*/;
         towerOffsetRegex = /M665 .*D(-?\d+\.?\d*) E(-?\d+\.?\d*) H(-?\d+\.?\d*)/;
         rodLenAndRadiusRegex = /M665 .*L(-?\d+\.?\d*) R(-?\d+\.?\d*)/;
         maxHeightRegex = /M665 .*Z(-?\d+\.?\d*)/;
@@ -204,6 +188,10 @@ $(function () {
 
                 if (match = towerOffsetRegex.exec(logLines[i])) {
                     newGeometry.TowerOffset = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+                }
+
+                if (match = radiusOffsetRegex.exec(logLines[i])) {
+                    newGeometry.RadiusAdjust = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
                 }
 
                 if (match = rodLenAndRadiusRegex.exec(logLines[i])) {
@@ -259,25 +247,20 @@ $(function () {
             RMS: self.ProbedRMS(),
             Points: self.probePoints,
         });
+
+        resetCalibrationData(self);
+    }
+
+    function resetCalibrationData(self) {
+        self.CalibratedRMS(0);
     }
 
     function onFetchGeoFinished(self) {
 
     }
 
-
     function computeCorrections(self) {
-        /*var fct = new Map(Object.entries(self.calibrate).map(([k, v]) => [k, v()]));
-        console.log(fct);
-        console.log(fct.RodLength);
-        console.log(fct["RodLength"]);
-        console.log(fct.get("RodLength"));
-        */
-        console.log("Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877 Baseline");
-        var oldGeo = self.geometry();
-        var factors = Array(MaxFactors).fill(true);
-
-        factors = [
+        var factors = [
             self.calibrate.EndStopOffset(),
             self.calibrate.EndStopOffset(),
             self.calibrate.EndStopOffset(),
@@ -296,54 +279,21 @@ $(function () {
             self.calibrate.RodLenghtAdjust() && !self.calibrate.RodLength(),
             /*self.calibrate.MaxHeight()*/];
 
-
-
-        //factors.fill(false, 6,6);
-        //factors.fill(true, -1);
-        var geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        var result = DoDeltaCalibration(geo, self.probePoints, factors);
-        geo = result.Geometry;
-        console.log(geo);
-        console.log("M92 X" + geo.StepsPerUnit[0].toFixed(4) + " Y" + geo.StepsPerUnit[1].toFixed(4) + " Z" + geo.StepsPerUnit[2].toFixed(4));
-        console.log("M666 X" + (geo.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geo.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geo.EndStopOffset[2] * -1).toFixed(4));
-        console.log("M665 D" + geo.TowerOffset[0].toFixed(4) + " E" + geo.TowerOffset[1].toFixed(4) + " H" + geo.TowerOffset[2].toFixed(4));
-        console.log("M665 L" + geo.DiagonalRod.toFixed(4) + " R" + geo.Radius.toFixed(4) + " Z" + geo.Height.toFixed(4));
+        var result = DoDeltaCalibration(self.currentGeometry().Clone(), self.probePoints, factors);
         self.CalibratedRMS(result.RMS.toFixed(5));
+        self.newGeometry(result.Geometry);
 
-        self.newGeometry(geo);
+        console.log(result);
+    }
 
-        console.log(result.Residuals);
-
-        /*
-        factors.fill(true, -4, -1);
-
-        geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-
-        /*
-        factors.fill(false, -1);
-        
-        geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-/*        
-        factors.fill(true, 0, -2);
-        factors.fill(false, -2);
-        factors.fill(true, -1);
-        geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-        
-        factors.fill(true, 0, -1);
-        //factors.fill(false, -1);
-   
-        geo = new DeltaGeometry(parseFloat(oldGeo.RodLength), parseFloat(oldGeo.DeltaRadius), parseFloat(oldGeo.MaxHeight), oldGeo.EndStopOffset.map(f => parseFloat(f) * -1), oldGeo.TowerOffset.map(f => parseFloat(f)), oldGeo.StepsPerUnit.map(f => parseFloat(f)));
-        console.log(DoDeltaCalibration(geo, self.probePoints, factors));
-
-/*        geo = new DeltaGeometry(self.geometry().RodLength, self.geometry().DeltaRadius, self.geometry().MaxHeight, self.geometry().EndStopOffset, self.geometry().TowerOffset, self.geometry().StepsPerUnit);
-        console.log(DoDeltaCalibration(geo, self.probePoints, 3));
-        console.log(geo);
-        */
-
-        //debugger;
+    function ConfigureGeometry(geometry) {
+        if (self.isPrinterReady()) {
+            OctoPrint.control.sendGcode("M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), null);
+            OctoPrint.control.sendGcode("M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4), null);
+            OctoPrint.control.sendGcode("M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4), null);
+            OctoPrint.control.sendGcode("M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4), null);
+            OctoPrint.control.sendGcode("M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4), null);
+        }
     }
 
 

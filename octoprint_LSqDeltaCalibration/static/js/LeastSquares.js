@@ -84,12 +84,18 @@ class DeltaGeometry
         this.RadiusAdjust = radiusAdjust.slice();
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
+        this.Height = height;
+        this.EndStopOffset = endStopOffset.slice();
 
         // these two need to be held in steps so steps/mm adjustment stays true
         this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
         this.HeightSteps = height * this.StepsPerUnit[AlphaTower];
 
         this.RecomputeGeometry();
+    }
+
+    Clone() {
+        return new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
     }
 
     RecomputeGeometry() {
@@ -138,8 +144,8 @@ class DeltaGeometry
     ComputeDerivative(factor, carriagePositions)
     {
         var perturb = 0.2;
-        var hiParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
-        var loParams = new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
+        var hiParams = this.Clone();
+        var loParams = this.Clone();
         var adjust = Array(MaxFactors).fill(0.0);
         var factorMap = Array(MaxFactors).fill(true);
 
