@@ -58,6 +58,7 @@ $(function () {
         self.isFetchingGeometry = false;
         self.isProbing = false;
         self.probePoints = [];
+        self.isReadyToCalibrate = ko.observable(false);
 
         self.sumOfSquares = 0;
         self.ProbedRMS = ko.observable((0).toFixed(5));
@@ -80,7 +81,7 @@ $(function () {
         // ui commands
         self.probeBed = function () { probeBed(self); };
         self.fetchGeometry = function () { fetchGeometry(self); };
-        self.computeCorrections = function () { computeCorrections(self); };
+        self.configureGeometry = function () { ConfigureGeometry(self, self.newGeometry()); };
 
         self.probedGeometries = ko.observableArray([]);
 
@@ -102,6 +103,7 @@ $(function () {
     }
 
     function resetProbeData(self) {
+        self.isReadyToCalibrate(false);
         self.probePoints = [];
         self.ProbedRMS((0).toFixed(5));
         if (self.plot) {
@@ -251,8 +253,10 @@ $(function () {
             RMS: self.ProbedRMS(),
             Points: self.probePoints,
         });
-
+   
+        self.isReadyToCalibrate(true);
         resetCalibrationData(self);
+        computeCorrections(self);
     }
 
     function resetCalibrationData(self) {
@@ -290,7 +294,7 @@ $(function () {
         console.log(result);
     }
 
-    function ConfigureGeometry(geometry) {
+    function ConfigureGeometry(self, geometry) {
         if (self.isPrinterReady()) {
             OctoPrint.control.sendGcode("M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), null);
             OctoPrint.control.sendGcode("M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4), null);
@@ -369,51 +373,6 @@ $(function () {
         return particles;
 
     }
-
-    /*
-
-      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774377395
-      Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.0183950188153732
-     
-baseline:
-Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.018395018774373877
-DiagonalRod: 327.5299152950855
-Radius: 169.72554868070145
-Height: 237.0044192709013
-EndStopOffset: (3) [-0.39453686230441354, 0, -0.16285191854281486]
-TowerOffset: (3) [-0.13306035015788306, -0.2757563138357201, 0]
-
-New baseline
-Calibrated 7 factors using 50 points, deviation before 0.05497954164959908 after 0.01839501877423555
-DiagonalRod: 327.5299427671819
-Radius: 169.72555597850354
-Height: 236.60691919278773
-EndStopOffset: (3) [0.39453696829120705, 0, 0.16285189028267522]
-TowerOffset: (3) [-0.13306038474986437, -0.27575652057546685, 0]
-StepsPerUnit: (3) [400, 400, 400]
-
-
-M92 X397.9860 Y400.8650 Z398.0130
-M666 X-1.4067 Y0.0000 Z-1.2095
-M665 D0.4435 E-0.0408 H0.0000
-M665 L330.4646 R170.6378 Z236.6437
-Calibrated 10 factors using 500 points, deviation before 0.0185863498299155 after 0.012551446059123492
-DeltaGeometry {DiagonalRod: 331.5587138542035, Radius: 171.03686581310757, EndStopOffset: Array(3), TowerOffset: Array(3), StepsPerUnit: Array(3), …}
-M92 X397.3564 Y401.0728 Z397.0675
-M666 X-1.7687 Y0.0000 Z-1.6914
-M665 D0.5703 E-0.0183 H0.0000
-M665 L331.5582 R171.0368 Z236.6514
-
-
-
-ToDo:
- * Understand/fix max height
- * Incorporate endstops on fwd and bkwd functions
- * Add belt bias to fwd and bkwd.
-
-
-*/
-
 
     /* view model class, parameters for constructor, container to bind to
      * Please see http://docs.octoprint.org/en/master/plugins/viewmodels.html#registering-custom-viewmodels for more details

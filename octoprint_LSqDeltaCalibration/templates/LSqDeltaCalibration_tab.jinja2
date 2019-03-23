@@ -118,98 +118,103 @@
         <div class="row-fluid collapse" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>
       </div>
 
-      <h4>
-        <a href="#collapseCalibration" data-toggle="collapse" class="collapsed"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-        {{ _('Calibration RMS') }}:<span data-bind="text: CalibratedRMS"></span>
-        <button class="btn btn-primary pull-right" data-bind="click: computeCorrections">{{ _('Calibrate') }}</button>
-      </h4>
-      <div class="row-fluid collapse" id="collapseCalibration">
-        <div class="row-fluid">
-          <div class="span3">
-            <H5>Parameter</H5>
+      <div class="row-fluid" data-bind="visible: isReadyToCalibrate()">
+        <h4>
+          <a href="#collapseCalibration" data-toggle="collapse" class="collapsed">
+            <i class="fa fa-caret-right fa-lg"></i>
+            <i class="fa fa-caret-down fa-lg"></i>
+          </a>
+          {{ _('Calibration RMS') }}:<span data-bind="text: CalibratedRMS"></span>
+          <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isPrinterReady()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
+        </h4>
+        <div class="row-fluid collapse" id="collapseCalibration">
+          <div class="row-fluid">
+            <div class="span3">
+              <H5>Parameter</H5>
+            </div>
+            <div class="input-append span6">
+              <H5>Value</H5>
+            </div>
+            <div class="input-append span1">
+              <H5>Calibrate</H5>
+            </div>
           </div>
-          <div class="input-append span6">
-            <H5>Value</H5>
-          </div>
-          <div class="input-append span1">
-            <H5>Calibrate</H5>
-          </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Steps per unit') }}</div>
-          <div class="span2" data-bind="text: newGeometry().StepsPerUnit[0].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().StepsPerUnit[1].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().StepsPerUnit[2].toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.StepsPerUnit" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Steps per unit') }}</div>
+            <div class="span2" data-bind="text: newGeometry().StepsPerUnit[0].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().StepsPerUnit[1].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().StepsPerUnit[2].toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.StepsPerUnit" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Tower Offset') }}</div>
-          <div class="span2" data-bind="text: newGeometry().TowerOffset[0].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().TowerOffset[1].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().TowerOffset[2].toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.TowerOffset" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Tower Offset') }}</div>
+            <div class="span2" data-bind="text: newGeometry().TowerOffset[0].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().TowerOffset[1].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().TowerOffset[2].toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.TowerOffset" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Max Height') }}</div>
-          <div class="span6" data-bind="text: newGeometry().Height.toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.MaxHeight" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Max Height') }}</div>
+            <div class="span6" data-bind="text: newGeometry().Height.toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.MaxHeight" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Endstop Offset') }}</div>
-          <div class="span2" data-bind="text: newGeometry().EndStopOffset[0].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().EndStopOffset[1].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().EndStopOffset[2].toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.EndStopOffset" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Endstop Offset') }}</div>
+            <div class="span2" data-bind="text: newGeometry().EndStopOffset[0].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().EndStopOffset[1].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().EndStopOffset[2].toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.EndStopOffset" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Rod Length') }}</div>
-          <div class="span6" data-bind="text: newGeometry().DiagonalRod.toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.RodLength" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Rod Length') }}</div>
+            <div class="span6" data-bind="text: newGeometry().DiagonalRod.toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.RodLength" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Rod Length Adjust') }}</div>
-          <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[0].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[1].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[2].toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.RodLenghtAdjust" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Rod Length Adjust') }}</div>
+            <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[0].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[1].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[2].toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.RodLenghtAdjust" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Delta Radius') }}</div>
-          <div class="span6" data-bind="text: newGeometry().Radius.toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.DeltaRadius" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Delta Radius') }}</div>
+            <div class="span6" data-bind="text: newGeometry().Radius.toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.DeltaRadius" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
-        </div>
 
-        <div class="row-fluid">
-          <div class="span3">{{ _('Delta Radius Adjust') }}</div>
-          <div class="span2" data-bind="text: newGeometry().RadiusAdjust[0].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().RadiusAdjust[1].toFixed(4)"></div>
-          <div class="span2" data-bind="text: newGeometry().RadiusAdjust[2].toFixed(4)"></div>
-          <div class="input-append span1">
-            <input type="checkbox" data-bind="checked: calibrate.DeltaRadiusAdjust" title="{{ _('Calibrate') }}" />
+          <div class="row-fluid">
+            <div class="span3">{{ _('Delta Radius Adjust') }}</div>
+            <div class="span2" data-bind="text: newGeometry().RadiusAdjust[0].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().RadiusAdjust[1].toFixed(4)"></div>
+            <div class="span2" data-bind="text: newGeometry().RadiusAdjust[2].toFixed(4)"></div>
+            <div class="input-append span1">
+              <input type="checkbox" data-bind="checked: calibrate.DeltaRadiusAdjust" title="{{ _('Calibrate') }}" />
+            </div>
           </div>
         </div>
-      </div>
+      </div> 
       <div class="row-fluid" data-bind="visible: probedGeometries().length > 0">
         <h4>
           <a href="#collapseGeoHistry" data-toggle="collapse" class="collapsed" ><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
