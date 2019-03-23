@@ -27,99 +27,92 @@
               <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
           </div>
       </div>
+      <div class="control-group">
+        <label class="control-label">{{ _('Simulation mode') }} :</label>
+        <div class="input-append">
+          <input type="checkbox" data-bind="checked: isSimulation" title="{{ _('Simulate printer responses for testing purposes.') }}" />
+        </div>
+      </div>
     </div>
 
     <div id="calibrate_tab" class="tab-pane active">
+
+      <div class="alert" data-bind="visible: !isPrinterReady() && !isSimulation()">
+        {{ _('Please connect your printer to get its capabilities') }}
+      </div>
+
+      
       <h4>
         <a href="#collapseGeometry" data-toggle="collapse" class="collapsed"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Current Geometry') }}
-        <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
+        <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry, enable: isReadyForCommands()" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
       </h4>
       <div class="row-fluid collapse" id="collapseGeometry">
-        <div data-bind="visible: !isPrinterReady()" class="message warning">
-          {{ _('Please connect your printer to get its capabilities') }}
+        <div class="row-fluid">
+          <div class="span3">
+            <H5>Parameter</H5>
+          </div>
+          <div class="input-append span6">
+            <H5>Value</H5>
+          </div>
         </div>
-        <fieldset>
-          <div class="control-group">
-            <label class="control-label">{{ _('Steps per unit') }} (X,Y,Z):</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().StepsPerUnit[0]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().StepsPerUnit[1]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().StepsPerUnit[2]" step="0.1" class="input-small"/>
-              <span class="add-on">steps</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Endstop Offset') }} (X,Y,Z):</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().EndStopOffset[0]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().EndStopOffset[1]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().EndStopOffset[2]" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Tower Offset') }} (X,Y,Z):</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().TowerOffset[0]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().TowerOffset[1]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().TowerOffset[2]" step="0.1" class="input-small"/>
-              <span class="add-on">deg</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Rod Length') }} :</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().DiagonalRod" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Rod Adjust') }} (X,Y,Z):</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().DiagonalRodAdjust[0]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().DiagonalRodAdjust[1]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().DiagonalRodAdjust[2]" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Delta Radius') }} :</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().Radius" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Radius Adjust') }} (X,Y,Z):</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().RadiusAdjust[0]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().RadiusAdjust[1]" step="0.1" class="input-small"/>
-              <input type="number" data-bind="value: currentGeometry().RadiusAdjust[2]" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label">{{ _('Max Height') }} :</label>
-            <div class="input-append">
-              <input type="number" data-bind="value: currentGeometry().Height" step="0.1" class="input-small"/>
-              <span class="add-on">mm</span>
-            </div>
-          </div>
-          <div class="control-group">
-            <div class="btn-group">
-              <button class="btn btn-primary" data-bind="click: fetchGeometry" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
-              <button class="btn btn-primary" data-bind="click: fetchGeometry" title="{{ _('Write the above geometry to the machine.') }}">{{ _('Send Geometry') }}</button>
-            </div>
-          </div>
-        </fieldset>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Steps per unit') }}</div>
+          <div class="span2" data-bind="text: currentGeometry().StepsPerUnit[0].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().StepsPerUnit[1].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().StepsPerUnit[2].toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Tower Offset') }}</div>
+          <div class="span2" data-bind="text: currentGeometry().TowerOffset[0].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().TowerOffset[1].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().TowerOffset[2].toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Max Height') }}</div>
+          <div class="span6" data-bind="text: currentGeometry().Height.toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Endstop Offset') }}</div>
+          <div class="span2" data-bind="text: currentGeometry().EndStopOffset[0].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().EndStopOffset[1].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().EndStopOffset[2].toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Rod Length') }}</div>
+          <div class="span6" data-bind="text: currentGeometry().DiagonalRod.toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Rod Length Adjust') }}</div>
+          <div class="span2" data-bind="text: currentGeometry().DiagonalRodAdjust[0].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().DiagonalRodAdjust[1].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().DiagonalRodAdjust[2].toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Delta Radius') }}</div>
+          <div class="span6" data-bind="text: currentGeometry().Radius.toFixed(4)"></div>
+        </div>
+
+        <div class="row-fluid">
+          <div class="span3">{{ _('Delta Radius Adjust') }}</div>
+          <div class="span2" data-bind="text: currentGeometry().RadiusAdjust[0].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().RadiusAdjust[1].toFixed(4)"></div>
+          <div class="span2" data-bind="text: currentGeometry().RadiusAdjust[2].toFixed(4)"></div>
+        </div>
       </div>
 
 
       <h4>
         <a href="#collapsePlot" data-toggle="collapse"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Probing RMS') }}:<span data-bind="text: ProbedRMS"></span>
-        <button class="btn btn-primary pull-right" data-bind="click: probeBed">{{ _('Probe bed') }}</button>
+        <button class="btn btn-primary pull-right" data-bind="click: probeBed, enable: isReadyForCommands()">{{ _('Probe bed') }}</button>
       </h4>
       <div class="row-fluid collapse in" id="collapsePlot">
         <div class="row-fluid collapse" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>

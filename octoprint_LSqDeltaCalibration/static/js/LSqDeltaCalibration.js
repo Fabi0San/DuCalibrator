@@ -17,6 +17,10 @@ $(function () {
 
         self.currentGeometry = ko.observable(new DeltaGeometry());
 
+        self.isSimulation = ko.observable(true);
+
+        self.isReadyForCommands = function () { return (self.isSimulation() || self.isPrinterReady()) && !self.isProbing && !self.isFetchingGeometry; };
+
         self.calibrate =
             {
                 StepsPerUnit: ko.observable(false),
