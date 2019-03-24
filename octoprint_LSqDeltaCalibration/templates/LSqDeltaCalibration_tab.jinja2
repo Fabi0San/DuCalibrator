@@ -43,11 +43,11 @@
 
       
       <h4>
-        <a href="#collapseGeometry" data-toggle="collapse" class="collapsed"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        <a href="#collapseGeometry" id="collapseGeometryControl" data-toggle="collapse" class="collapsed" data-bind="visible: isGeometryKnown"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Current Geometry') }}
         <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry, enable: isReadyForCommands()" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
       </h4>
-      <div class="row-fluid collapse" id="collapseGeometry">
+      <div class="row-fluid collapse" data-bind="" id="collapseGeometry">
         <div class="row-fluid">
           <div class="span3">
             <H5>Parameter</H5>
@@ -110,22 +110,19 @@
 
 
       <h4>
-        <a href="#collapsePlot" data-toggle="collapse"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-        {{ _('Probing RMS') }}:<span data-bind="text: ProbedRMS"></span>
-        <button class="btn btn-primary pull-right" data-bind="click: probeBed, enable: isReadyForCommands()">{{ _('Probe bed') }}</button>
+        <a href="#collapsePlot" data-toggle="collapse" class="collapsed" data-bind="visible: probedGeometries().length > 0"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        {{ _('Probing') }} <span data-bind="visible: ProbedRMS">{{ _('RMS') }}: <span data-bind="text: ProbedRMS"></span></span>
+        <button class="btn btn-primary pull-right" data-bind="click: probeBed, enable: isReadyForCommands() && isGeometryKnown">{{ _('Probe bed') }}</button>
       </h4>
-      <div class="row-fluid collapse in" id="collapsePlot">
-        <div class="row-fluid collapse" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>
+      <div class="row-fluid collapse" id="collapsePlot">
+        <div class="row-fluid" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>
       </div>
 
-      <div class="row-fluid" data-bind="visible: isReadyToCalibrate()">
+      <div class="row-fluid">
         <h4>
-          <a href="#collapseCalibration" data-toggle="collapse" class="collapsed">
-            <i class="fa fa-caret-right fa-lg"></i>
-            <i class="fa fa-caret-down fa-lg"></i>
-          </a>
+          <a href="#collapseCalibration" data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
           {{ _('Calibration RMS') }}:<span data-bind="text: CalibratedRMS"></span>
-          <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isPrinterReady()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
+          <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
         </h4>
         <div class="row-fluid collapse" id="collapseCalibration">
           <div class="row-fluid">
@@ -215,9 +212,9 @@
           </div>
         </div>
       </div> 
-      <div class="row-fluid" data-bind="visible: probedGeometries().length > 0">
+      <div class="row-fluid">
         <h4>
-          <a href="#collapseGeoHistry" data-toggle="collapse" class="collapsed" ><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+          <a href="#collapseGeoHistry" data-toggle="collapse" class="collapsed" data-bind="visible: probedGeometries().length > 0"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
           {{ _('Probing history') }}</h4>
 
         <div class="row-fluid collapse" id="collapseGeoHistry">

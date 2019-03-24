@@ -16,6 +16,7 @@ $(function () {
         self.plotDivElement = $("#surfacePlotDiv")[0];
 
         self.currentGeometry = ko.observable(new DeltaGeometry());
+        self.isGeometryKnown = ko.observable(false);
 
         self.isSimulation = ko.observable(true);
 
@@ -61,8 +62,8 @@ $(function () {
         self.isReadyToCalibrate = ko.observable(false);
 
         self.sumOfSquares = 0;
-        self.ProbedRMS = ko.observable((0).toFixed(5));
-        self.CalibratedRMS = ko.observable((0).toFixed(5));
+        self.ProbedRMS = ko.observable();
+        self.CalibratedRMS = ko.observable();
 
 
         // test strings
@@ -105,13 +106,15 @@ $(function () {
     function resetProbeData(self) {
         self.isReadyToCalibrate(false);
         self.probePoints = [];
-        self.ProbedRMS((0).toFixed(5));
+        self.ProbedRMS(undefined);
         if (self.plot) {
             self.plot.geometry.dispose();
             self.plot = null;
         }
 
-        if (self.plotDivElement.firstChild) self.plotDivElement.removeChild(self.plotDivElement.firstChild);
+        if (self.plotDivElement.firstChild)
+            self.plotDivElement.removeChild(self.plotDivElement.firstChild);
+        $("#collapsePlot").collapse('hide');
     }
 
     function probeBed(self) {
@@ -140,6 +143,7 @@ $(function () {
             OctoPrint.control.sendGcode(`G29.1 P1 I${self.probePointCount()} J${self.probeRadius()}`, null);
         else parseResponse(self.simulatedG29, self);
 
+        $("#collapsePlot").collapse('show');
 
     }
 
@@ -255,16 +259,20 @@ $(function () {
         });
    
         self.isReadyToCalibrate(true);
-        resetCalibrationData(self);
         computeCorrections(self);
+        $("#collapseGeometry").collapse('hide');
+        $("#collapseCalibration").collapse('show');
     }
 
     function resetCalibrationData(self) {
-        self.CalibratedRMS(0);
+        self.CalibratedRMS(undefined);
+        $("#collapseCalibration").collapse('hide');
     }
 
     function onFetchGeoFinished(self) {
-
+        self.isGeometryKnown(true);
+        resetCalibrationData(self);
+        $("#collapseGeometry").collapse('show');
     }
 
     function computeCorrections(self) {
@@ -295,15 +303,21 @@ $(function () {
     }
 
     function ConfigureGeometry(self, geometry) {
-        if (self.isPrinterReady()) {
-            OctoPrint.control.sendGcode("M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), null);
-            OctoPrint.control.sendGcode("M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4), null);
-            OctoPrint.control.sendGcode("M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4), null);
-            OctoPrint.control.sendGcode("M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4), null);
-            OctoPrint.control.sendGcode("M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4), null);
-        }
+        if (self.isPrinterReady())
+            SendGeometryToMachine(geometry);
+        self.currentGeometry(geometry);
+        $("#collapseGeometry").collapse('show');
+        resetProbeData(self);
+        resetCalibrationData(self);
     }
 
+    function SendGeometryToMachine(geometry) {
+        OctoPrint.control.sendGcode("M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), null);
+        OctoPrint.control.sendGcode("M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4), null);
+        OctoPrint.control.sendGcode("M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4), null);
+        OctoPrint.control.sendGcode("M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4), null);
+        OctoPrint.control.sendGcode("M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4), null);
+    }
 
     function request(type, command, args, successCb) {
         var data = function data() {
