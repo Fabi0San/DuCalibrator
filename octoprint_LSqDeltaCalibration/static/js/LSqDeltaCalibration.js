@@ -247,8 +247,9 @@ $(function () {
 
     function LoadGeometry(data, self) {
         //debugger;
-        self.probePoints = data.Points;
-        self.ProbedRMS(data.RMS);
+        //self.probePoints = data.Points;
+        //self.ProbedRMS(data.RMS);
+        ConfigureGeometry(self, data.Geometry);
     }
 
     function onProbingFinished(self) {
@@ -257,6 +258,7 @@ $(function () {
             Timestamp: new Date().toLocaleString(),
             RMS: self.ProbedRMS(),
             Points: self.probePoints,
+            Geometry: self.currentGeometry().Clone()
         });
    
         self.isReadyToCalibrate(true);
