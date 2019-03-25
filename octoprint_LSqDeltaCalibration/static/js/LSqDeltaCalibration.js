@@ -114,7 +114,7 @@ $(function () {
 
         if (self.plotDivElement.firstChild)
             self.plotDivElement.removeChild(self.plotDivElement.firstChild);
-        $("#collapsePlot").collapse('hide');
+        $("#collapsePlot.in").collapse('hide');
     }
 
     function probeBed(self) {
@@ -237,6 +237,7 @@ $(function () {
     }
 
     function fetchGeometry(self) {
+        //debugger;
         resetProbeData(self);
         self.isFetchingGeometry = true;
         if (self.isPrinterReady())
@@ -260,16 +261,17 @@ $(function () {
    
         self.isReadyToCalibrate(true);
         computeCorrections(self);
-        $("#collapseGeometry").collapse('hide');
+        $("#collapseGeometry.in").collapse('hide');
         $("#collapseCalibration").collapse('show');
     }
 
     function resetCalibrationData(self) {
         self.CalibratedRMS(undefined);
-        $("#collapseCalibration").collapse('hide');
+        $("#collapseCalibration.in").collapse('hide');
     }
 
     function onFetchGeoFinished(self) {
+        //debugger;
         self.isGeometryKnown(true);
         resetCalibrationData(self);
         $("#collapseGeometry").collapse('show');
