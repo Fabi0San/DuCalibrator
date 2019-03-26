@@ -79,6 +79,8 @@ $(function () {
             "Recv: ok"];
           */
 
+        self.CalibrationControl = new CollapseControl("#calibrationCollapseControl");
+
         // ui commands
         self.probeBed = function () { probeBed(self); };
         self.fetchGeometry = function () { fetchGeometry(self); };
@@ -193,7 +195,7 @@ $(function () {
                 }
 
                 if (match = endStopOffsetRegex.exec(logLines[i])) {
-                    newGeometry.EndStopOffset = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+                    newGeometry.EndStopOffset = [parseFloat(match[1])*-1, parseFloat(match[2])*-1, parseFloat(match[3])*-1];
                 }
 
                 if (match = towerOffsetRegex.exec(logLines[i])) {
@@ -264,12 +266,14 @@ $(function () {
         self.isReadyToCalibrate(true);
         computeCorrections(self);
         $("#collapseGeometry.in").collapse('hide');
-        $("#collapseCalibration").collapse('show');
+        //$("#collapseCalibration").collapse('show');
+        self.CalibrationControl.Show();
     }
 
     function resetCalibrationData(self) {
         self.CalibratedRMS(undefined);
-        $("#collapseCalibration.in").collapse('hide');
+//        $("#collapseCalibration.in").collapse('hide');
+        self.CalibrationControl.Hide();
     }
 
     function onFetchGeoFinished(self) {
@@ -316,11 +320,12 @@ $(function () {
     }
 
     function SendGeometryToMachine(geometry) {
-        OctoPrint.control.sendGcode("M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), null);
-        OctoPrint.control.sendGcode("M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4), null);
-        OctoPrint.control.sendGcode("M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4), null);
-        OctoPrint.control.sendGcode("M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4), null);
-        OctoPrint.control.sendGcode("M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4), null);
+        OctoPrint.control.sendGcode(
+            ["M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), 
+            "M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4),
+            "M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4),
+            "M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4),
+            "M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4)], null);
     }
 
     function request(type, command, args, successCb) {

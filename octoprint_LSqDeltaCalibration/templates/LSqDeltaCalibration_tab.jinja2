@@ -120,7 +120,7 @@
 
       <div class="row-fluid">
         <h4>
-          <a href="#collapseCalibration" data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+          <a href="#collapseCalibration" id="calibrationCollapseControl" data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
           {{ _('Calibration RMS') }}:<span data-bind="text: CalibratedRMS"></span>
           <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
         </h4>

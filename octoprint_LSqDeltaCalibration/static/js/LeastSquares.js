@@ -17,6 +17,32 @@ function fsquare(x) {
     return x * x;
 }
 
+class CollapseControl {
+    constructor(id) {
+        this.controlElement = $(id)[0];
+    }
+
+    IsCollapsed() {
+        return this.controlElement.classList.contains("collapsed");
+    }
+
+    Toggle() {
+        this.controlElement.click();
+    }
+
+    Hide() {
+        if (!this.IsCollapsed()) {
+            this.Toggle();
+        }
+    }
+
+    Show() {
+        if (this.IsCollapsed()) {
+            this.Toggle();
+        }
+    }
+}
+
 class Matrix
 {
     constructor(rows, cols) {
