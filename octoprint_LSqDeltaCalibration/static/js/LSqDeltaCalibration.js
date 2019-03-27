@@ -4,25 +4,25 @@
  * Author: Fabio Santos
  * License: AGPLv3
  */
-$(function () {
-    function LsqdeltacalibrationViewModel(parameters) {
-        var self = this;
+//$(function () {
+class LsqDeltaCalibrationViewModel {
+    constructor(parameters) {
 
-        self.trialNumber = 0;
+        this.trialNumber = 0;
 
-        self.settingsViewModel = parameters[0];
-        self.printerProfilesViewModel = parameters[1];
+        this.settingsViewModel = parameters[0];
+        this.printerProfilesViewModel = parameters[1];
 
-        self.plotDivElement = $("#surfacePlotDiv")[0];
+        this.plotDivElement = $("#surfacePlotDiv")[0];
 
-        self.currentGeometry = ko.observable(new DeltaGeometry());
-        self.isGeometryKnown = ko.observable(false);
+        this.currentGeometry = ko.observable(new DeltaGeometry());
+        this.isGeometryKnown = ko.observable(false);
 
-        self.isSimulation = ko.observable(true);
+        this.isSimulation = ko.observable(true);
 
-        self.isReadyForCommands = function () { return (self.isSimulation() || self.isPrinterReady()) && !self.isProbing && !self.isFetchingGeometry; };
+        this.isReadyForCommands = function () { return (this.isSimulation() || this.isPrinterReady()) && !this.isProbing && !this.isFetchingGeometry; };
 
-        self.calibrate =
+        this.calibrate =
             {
                 StepsPerUnit: ko.observable(false),
                 EndStopOffset: ko.observable(true),
@@ -34,44 +34,44 @@ $(function () {
                 MaxHeight: ko.observable(true)
             };
 
-        self.calibrate.StepsPerUnit.subscribe(function () { computeCorrections(self); });
-        self.calibrate.EndStopOffset.subscribe(function () { computeCorrections(self); });
-        self.calibrate.TowerOffset.subscribe(function () { computeCorrections(self); });
-        self.calibrate.RodLength.subscribe(function () { computeCorrections(self); });
-        self.calibrate.RodLenghtAdjust.subscribe(function () { computeCorrections(self); });
-        self.calibrate.DeltaRadius.subscribe(function () { computeCorrections(self); });
-        self.calibrate.DeltaRadiusAdjust.subscribe(function () { computeCorrections(self); });
-        self.calibrate.MaxHeight.subscribe(function () { computeCorrections(self); });
+        this.calibrate.StepsPerUnit.subscribe(this.computeCorrections, this);
+        this.calibrate.EndStopOffset.subscribe(this.computeCorrections, this);
+        this.calibrate.TowerOffset.subscribe(this.computeCorrections, this);
+        this.calibrate.RodLength.subscribe(this.computeCorrections, this);
+        this.calibrate.RodLenghtAdjust.subscribe(this.computeCorrections, this);
+        this.calibrate.DeltaRadius.subscribe(this.computeCorrections, this);
+        this.calibrate.DeltaRadiusAdjust.subscribe(this.computeCorrections, this);
+        this.calibrate.MaxHeight.subscribe(this.computeCorrections, this);
 
-        self.probeRadius = ko.observable(self.printerProfilesViewModel.currentProfileData().volume.width() / 2);
-        self.probePointCount = ko.observable(50);
+        this.probeRadius = ko.observable(this.printerProfilesViewModel.currentProfileData().volume.width() / 2);
+        this.probePointCount = ko.observable(50);
 
-        self.logText = ko.observable(undefined);
+        this.logText = ko.observable(undefined);
 
-        self.isPrinterReady = ko.observable(false);
+        this.isPrinterReady = ko.observable(false);
 
-        self.newGeometry = ko.observable(new DeltaGeometry());
+        this.newGeometry = ko.observable(new DeltaGeometry());
 
-        self.plot = undefined;
+        this.plot = undefined;
 
-        self.zScaleInfo = undefined;
+        this.zScaleInfo = undefined;
 
-        self.isFetchingGeometry = false;
-        self.isProbing = false;
-        self.probePoints = [];
-        self.isReadyToCalibrate = ko.observable(false);
+        this.isFetchingGeometry = false;
+        this.isProbing = false;
+        this.probePoints = [];
+        this.isReadyToCalibrate = ko.observable(false);
 
-        self.sumOfSquares = 0;
-        self.ProbedRMS = ko.observable();
-        self.CalibratedRMS = ko.observable();
+        this.sumOfSquares = 0;
+        this.ProbedRMS = ko.observable();
+        this.CalibratedRMS = ko.observable();
 
 
         // test strings
-        self.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170.4959", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X-0.488 Y-0.013 Z-0.106", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
-        self.simulatedG29 = ["Send: G29.1 P1", "Recv: PROBE: X0.0000, Y0.0000, Z0.0050", "Recv: PROBE: X-10.4060, Y-4.4403, Z0.0050", "Recv: PROBE: X4.7416, Y-15.2813, Z0.0300", "Recv: PROBE: X19.3953, Y-2.7970, Z0.0125", "Recv: PROBE: X15.6567, Y16.3361, Z0.0025", "Recv: PROBE: X-1.8369, Y25.2314, Z0.0150", "Recv: PROBE: X-20.4358, Y18.7184, Z0.0175", "Recv: PROBE: X-29.9018, Y1.3715, Z0.0275", "Recv: PROBE: X-26.3793, Y-18.1144, Z0.0450", "Recv: PROBE: X-11.9836, Y-31.7552, Z0.0525", "Recv: PROBE: X7.6122, Y-34.9579, Z0.0325", "Recv: PROBE: X25.8929, Y-27.1580, Z0.0125", "Recv: PROBE: X37.5949, Y-11.0736, Z-0.0550", "Recv: PROBE: X39.8532, Y8.7019, Z-0.0725", "Recv: PROBE: X32.4465, Y27.1887, Z-0.0400", "Recv: PROBE: X17.3777, Y40.2246, Z-0.0625", "Recv: PROBE: X-1.9211, Y45.2140, Z-0.0300", "Recv: PROBE: X-21.4938, Y41.4007, Z0.0050", "Recv: PROBE: X-37.6772, Y29.7393, Z0.0100", "Recv: PROBE: X-47.7073, Y12.4905, Z0.0300", "Recv: PROBE: X-50.0630, Y-7.3281, Z0.0800", "Recv: PROBE: X-44.5526, Y-26.5154, Z0.0900", "Recv: PROBE: X-32.1853, Y-42.1913, Z0.0775", "Recv: PROBE: X-14.8893, Y-52.1758, Z0.0800", "Recv: PROBE: X4.8530, Y-55.2128, Z0.0425", "Recv: PROBE: X24.3901, Y-51.0404, Z0.0300", "Recv: PROBE: X41.2544, Y-40.3246, Z0.0000", "Recv: PROBE: X53.4440, Y-24.4896, Z-0.0425", "Recv: PROBE: X59.6152, Y-5.4801, Z-0.0775", "Recv: PROBE: X59.1748, Y14.5034, Z-0.1100", "Recv: PROBE: X52.2807, Y33.2675, Z-0.0700", "Recv: PROBE: X39.7627, Y48.8562, Z-0.0925", "Recv: PROBE: X22.9838, Y59.7306, Z-0.0725", "Recv: PROBE: X3.6642, Y64.8889, Z-0.0600", "Recv: PROBE: X-16.3106, Y63.9216, Z-0.0475", "Recv: PROBE: X-35.0764, Y57.0057, Z0.0050", "Recv: PROBE: X-50.9580, Y44.8474, Z0.0025", "Recv: PROBE: X-62.6020, Y28.5831, Z0.0425", "Recv: PROBE: X-69.0710, Y9.6540, Z0.0900", "Recv: PROBE: X-69.8942, Y-10.3343, Z0.0725", "Recv: PROBE: X-65.0756, Y-29.7518, Z0.0375", "Recv: PROBE: X-55.0637, Y-47.0743, Z0.0475", "Recv: PROBE: X-40.6905, Y-60.9941, Z0.0575", "Recv: PROBE: X-23.0859, Y-70.5056, Z0.1000", "Recv: PROBE: X-3.5774, Y-74.9613, Z0.0825", "Recv: PROBE: X16.4156, Y-74.0981, Z0.0400", "Recv: PROBE: X35.4875, Y-68.0341, Z0.0925", "Recv: PROBE: X52.3408, Y-57.2402, Z0.0300", "Recv: PROBE: X65.8683, Y-42.4895, Z-0.0125", "Recv: PROBE: X75.2157, Y-24.7911, Z-0.0525", "Recv: max: 0.1000, min: -0.1100, delta: 0.2100", "Recv: ok"];
+        this.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170.4959", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X-0.488 Y-0.013 Z-0.106", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
+        this.simulatedG29 = ["Send: G29.1 P1", "Recv: PROBE: X0.0000, Y0.0000, Z0.0050", "Recv: PROBE: X-10.4060, Y-4.4403, Z0.0050", "Recv: PROBE: X4.7416, Y-15.2813, Z0.0300", "Recv: PROBE: X19.3953, Y-2.7970, Z0.0125", "Recv: PROBE: X15.6567, Y16.3361, Z0.0025", "Recv: PROBE: X-1.8369, Y25.2314, Z0.0150", "Recv: PROBE: X-20.4358, Y18.7184, Z0.0175", "Recv: PROBE: X-29.9018, Y1.3715, Z0.0275", "Recv: PROBE: X-26.3793, Y-18.1144, Z0.0450", "Recv: PROBE: X-11.9836, Y-31.7552, Z0.0525", "Recv: PROBE: X7.6122, Y-34.9579, Z0.0325", "Recv: PROBE: X25.8929, Y-27.1580, Z0.0125", "Recv: PROBE: X37.5949, Y-11.0736, Z-0.0550", "Recv: PROBE: X39.8532, Y8.7019, Z-0.0725", "Recv: PROBE: X32.4465, Y27.1887, Z-0.0400", "Recv: PROBE: X17.3777, Y40.2246, Z-0.0625", "Recv: PROBE: X-1.9211, Y45.2140, Z-0.0300", "Recv: PROBE: X-21.4938, Y41.4007, Z0.0050", "Recv: PROBE: X-37.6772, Y29.7393, Z0.0100", "Recv: PROBE: X-47.7073, Y12.4905, Z0.0300", "Recv: PROBE: X-50.0630, Y-7.3281, Z0.0800", "Recv: PROBE: X-44.5526, Y-26.5154, Z0.0900", "Recv: PROBE: X-32.1853, Y-42.1913, Z0.0775", "Recv: PROBE: X-14.8893, Y-52.1758, Z0.0800", "Recv: PROBE: X4.8530, Y-55.2128, Z0.0425", "Recv: PROBE: X24.3901, Y-51.0404, Z0.0300", "Recv: PROBE: X41.2544, Y-40.3246, Z0.0000", "Recv: PROBE: X53.4440, Y-24.4896, Z-0.0425", "Recv: PROBE: X59.6152, Y-5.4801, Z-0.0775", "Recv: PROBE: X59.1748, Y14.5034, Z-0.1100", "Recv: PROBE: X52.2807, Y33.2675, Z-0.0700", "Recv: PROBE: X39.7627, Y48.8562, Z-0.0925", "Recv: PROBE: X22.9838, Y59.7306, Z-0.0725", "Recv: PROBE: X3.6642, Y64.8889, Z-0.0600", "Recv: PROBE: X-16.3106, Y63.9216, Z-0.0475", "Recv: PROBE: X-35.0764, Y57.0057, Z0.0050", "Recv: PROBE: X-50.9580, Y44.8474, Z0.0025", "Recv: PROBE: X-62.6020, Y28.5831, Z0.0425", "Recv: PROBE: X-69.0710, Y9.6540, Z0.0900", "Recv: PROBE: X-69.8942, Y-10.3343, Z0.0725", "Recv: PROBE: X-65.0756, Y-29.7518, Z0.0375", "Recv: PROBE: X-55.0637, Y-47.0743, Z0.0475", "Recv: PROBE: X-40.6905, Y-60.9941, Z0.0575", "Recv: PROBE: X-23.0859, Y-70.5056, Z0.1000", "Recv: PROBE: X-3.5774, Y-74.9613, Z0.0825", "Recv: PROBE: X16.4156, Y-74.0981, Z0.0400", "Recv: PROBE: X35.4875, Y-68.0341, Z0.0925", "Recv: PROBE: X52.3408, Y-57.2402, Z0.0300", "Recv: PROBE: X65.8683, Y-42.4895, Z-0.0125", "Recv: PROBE: X75.2157, Y-24.7911, Z-0.0525", "Recv: max: 0.1000, min: -0.1100, delta: 0.2100", "Recv: ok"];
         /*
-        self.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X0 Y0 Z0", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
-        self.simulatedG29 = ["Send: G29.1 P1",
+        this.simulatedM503 = ["Send: M503", "Recv: ; config override present: /sd/config-override", "Recv: ;Steps per unit:", "Recv: M92 X400.00000 Y400.00000 Z400.00000", "Recv: ;Acceleration mm/sec^2:", "Recv: M204 S1000.00000", "Recv: ;X- Junction Deviation, Z- Z junction deviation, S - Minimum Planner speed mm/sec:", "Recv: M205 X0.05000 Z-1.00000 S0.00000", "Recv: ;Max cartesian feedrates in mm/sec:", "Recv: M203 X300.00000 Y300.00000 Z300.00000 S-1.00000", "Recv: ;Max actuator feedrates in mm/sec:", "Recv: M203.1 X250.00000 Y250.00000 Z250.00000", "Recv: ;Optional arm solution specific settings:", "Recv: M665 L330.0000 R170", "Recv: ;Digipot Motor currents:", "Recv: M907 X1.00000 Y1.00000 Z1.00000 A1.50000", "Recv: ;E Steps per mm:", "Recv: M92 E140.0000 P57988", "Recv: ;E Filament diameter:", "Recv: M200 D0.0000 P57988", "Recv: ;E retract length, feedrate:", "Recv: M207 S3.0000 F2700.0000 Z0.0000 Q6000.0000 P57988", "Recv: ;E retract recover length, feedrate:", "Recv: M208 S0.0000 F480.0000 P57988", "Recv: ;E acceleration mm/sec��:", "Recv: M204 E500.0000 P57988", "Recv: ;E max feed rate mm/sec:", "Recv: M203 E50.0000 P57988", "Recv: ;PID settings:", "Recv: M301 S0 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S0 P300.0000", "Recv: ;PID settings:", "Recv: M301 S1 P10.0000 I0.3000 D200.0000 X255.0000 Y255", "Recv: ;Max temperature setting:", "Recv: M143 S1 P300.0000", "Recv: ;Home offset (mm):", "Recv: M206 X0.00 Y0.00 Z0.00", "Recv: ;Trim (mm):", "Recv: M666 X0 Y0 Z0", "Recv: ;Max Z", "Recv: M665 Z236.6025", "Recv: ;Probe feedrates Slow/fast(K)/Return (mm/sec) max_z (mm) height (mm) dwell (s):", "Recv: M670 S5.00 K200.00 R200.00 Z230.00 H1.00 D0.00", "Recv: ;Probe offsets:", "Recv: M565 X0.00000 Y0.00000 Z0.00000", "Recv:", "Recv: ok"];
+        this.simulatedG29 = ["Send: G29.1 P1",
             "Recv: PROBE: X0.0000, Y0.0000, Z0.0000",
             "Recv: PROBE: X0.0, Y80, Z10.0000",
             "Recv: PROBE: X-70, Y-40, Z-10",
@@ -79,53 +79,52 @@ $(function () {
             "Recv: ok"];
           */
 
-        self.CalibrationControl = new CollapseControl("#calibrationCollapseControl");
+        this.GeometryControl = new CollapseControl("#collapseGeometryControl");
+        this.PlotControl = new CollapseControl("#collapsePlotControl");
+        this.CalibrationControl = new CollapseControl("#collapseCalibrationControl");
 
-        // ui commands
-        self.probeBed = function () { probeBed(self); };
-        self.fetchGeometry = function () { fetchGeometry(self); };
-        self.configureGeometry = function () { ConfigureGeometry(self, self.newGeometry()); };
 
-        self.probedGeometries = ko.observableArray([]);
+        this.probedGeometries = ko.observableArray([]);
 
-        //hooks
-        self.fromCurrentData = function (data) { processNewPrinterData(data, self); };
-        self.fromHistoryData = function (data) { processOldPrinterData(data, self); };
-        self.LoadGeometry = function (data) { LoadGeometry(data, self); };
 
     }
 
-    function processNewPrinterData(data, self) {
-        self.logText(data.logs);
-        parseResponse(data.logs, self);
-        processOldPrinterData(data, self);
+    //hooks
+    fromCurrentData(data) {
+        this.parseResponse(data.logs);
+        this.fromHistoryData(data);
     }
 
-    function processOldPrinterData(data, self) {
-        self.isPrinterReady(data.state.flags.ready);
+    fromHistoryData(data) {
+        this.isPrinterReady(data.state.flags.ready);
     }
 
-    function resetProbeData(self) {
-        self.isReadyToCalibrate(false);
-        self.probePoints = [];
-        self.ProbedRMS(undefined);
-        if (self.plot) {
-            self.plot.geometry.dispose();
-            self.plot = null;
+    // ui commands
+    configureGeometry() {
+        this.ConfigureGeometry(this.newGeometry());
+    }
+
+    resetProbeData() {
+        this.isReadyToCalibrate(false);
+        this.probePoints = [];
+        this.ProbedRMS(undefined);
+        if (this.plot) {
+            this.plot.geometry.dispose();
+            this.plot = null;
         }
 
-        if (self.plotDivElement.firstChild)
-            self.plotDivElement.removeChild(self.plotDivElement.firstChild);
-        $("#collapsePlot.in").collapse('hide');
+        if (this.plotDivElement.firstChild)
+            this.plotDivElement.removeChild(this.plotDivElement.firstChild);
+        this.PlotControl.Hide();
     }
 
-    function probeBed(self) {
-        self.isProbing = true;
-        resetProbeData(self);
+    probeBed() {
+        this.isProbing = true;
+        this.resetProbeData();
 
-        var radius = self.printerProfilesViewModel.currentProfileData().volume.width() / 2;
+        var radius = this.printerProfilesViewModel.currentProfileData().volume.width() / 2;
 
-        self.zScaleInfo = {
+        this.zScaleInfo = {
             minZ: undefined,
             maxZ: undefined,
             zScale: 1,
@@ -133,23 +132,22 @@ $(function () {
         };
 
 
-        self.plot = preparePlot(
-            self.plotDivElement,
+        this.plot = this.preparePlot(
+            this.plotDivElement,
             radius,
-            self.probePointCount());
+            this.probePointCount());
 
-        self.sumOfSquares = 0;
-        self.ProbedRMS(0);
+        this.sumOfSquares = 0;
+        this.ProbedRMS(0);
 
-        if (self.isPrinterReady())
-            OctoPrint.control.sendGcode(`G29.1 P1 I${self.probePointCount()} J${self.probeRadius()}`, null);
-        else parseResponse(self.simulatedG29, self);
+        if (this.isPrinterReady())
+            OctoPrint.control.sendGcode(`G29.1 P1 I${this.probePointCount()} J${this.probeRadius()}`, null);
+        else this.parseResponse(this.simulatedG29);
 
-        $("#collapsePlot").collapse('show');
-
+        this.PlotControl.Show();
     }
 
-    function adjustZScale(zScaleInfo, z) {
+    adjustZScale(zScaleInfo, z) {
         if ((zScaleInfo.maxZ === undefined) || (z > zScaleInfo.maxZ))
             zScaleInfo.maxZ = z;
         if ((zScaleInfo.minZ === undefined) || (z < zScaleInfo.minZ))
@@ -165,37 +163,38 @@ $(function () {
         return newScale / oldScale;
     }
 
-    function logProbePoint(self, x, y, z) {
-        self.probePoints.push([x, y, z]);
-        self.sumOfSquares += z * z;
-        self.ProbedRMS(Math.sqrt(self.sumOfSquares / self.probePoints.length).toFixed(5));
+    logProbePoint(x, y, z) {
+        this.probePoints.push([x, y, z]);
+        this.sumOfSquares += z * z;
+        this.ProbedRMS(Math.sqrt(this.sumOfSquares / this.probePoints.length).toFixed(5));
 
-        self.plot.geometry.scale(1, 1, adjustZScale(self.zScaleInfo, z));
+        this.plot.geometry.scale(1, 1, this.adjustZScale(this.zScaleInfo, z));
 
-        self.plot.geometry.attributes.position.setXYZ(self.probePoints.length - 1, x, y, z * self.zScaleInfo.zScale);
-        self.plot.geometry.setDrawRange(0, self.probePoints.length);
-        self.plot.geometry.attributes.position.needsUpdate = true;
+        this.plot.geometry.attributes.position.setXYZ(this.probePoints.length - 1, x, y, z * this.zScaleInfo.zScale);
+        this.plot.geometry.setDrawRange(0, this.probePoints.length);
+        this.plot.geometry.attributes.position.needsUpdate = true;
     }
 
-    function parseResponse(logLines, self) {
-        stepsPerUnitRegex = /M92 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
-        endStopOffsetRegex = /M666 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
-        radiusOffsetRegex = /M665 .*A(-?\d+\.?\d*) B(-?\d+\.?\d*) C(-?\d+\.?\d*).*/;
-        towerOffsetRegex = /M665 .*D(-?\d+\.?\d*) E(-?\d+\.?\d*) H(-?\d+\.?\d*)/;
-        rodLenAndRadiusRegex = /M665 .*L(-?\d+\.?\d*) R(-?\d+\.?\d*)/;
-        maxHeightRegex = /M665 .*Z(-?\d+\.?\d*)/;
-        probePointRegex = /PROBE: X(-?\d+\.?\d*), Y(-?\d+\.?\d*), Z(-?\d+\.?\d*)/;
+    parseResponse(logLines) {
+        var stepsPerUnitRegex = /M92 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
+        var endStopOffsetRegex = /M666 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
+        var radiusOffsetRegex = /M665 .*A(-?\d+\.?\d*) B(-?\d+\.?\d*) C(-?\d+\.?\d*).*/;
+        var towerOffsetRegex = /M665 .*D(-?\d+\.?\d*) E(-?\d+\.?\d*) H(-?\d+\.?\d*)/;
+        var rodLenAndRadiusRegex = /M665 .*L(-?\d+\.?\d*) R(-?\d+\.?\d*)/;
+        var maxHeightRegex = /M665 .*Z(-?\d+\.?\d*)/;
+        var probePointRegex = /PROBE: X(-?\d+\.?\d*), Y(-?\d+\.?\d*), Z(-?\d+\.?\d*)/;
+        var match;
 
-        var newGeometry = self.currentGeometry();
+        var newGeometry = this.currentGeometry();
         for (var i = 0; i < logLines.length; i++) {
 
-            if (self.isFetchingGeometry) {
+            if (this.isFetchingGeometry) {
                 if (match = stepsPerUnitRegex.exec(logLines[i])) {
                     newGeometry.StepsPerUnit = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
                 }
 
                 if (match = endStopOffsetRegex.exec(logLines[i])) {
-                    newGeometry.EndStopOffset = [parseFloat(match[1])*-1, parseFloat(match[2])*-1, parseFloat(match[3])*-1];
+                    newGeometry.EndStopOffset = [parseFloat(match[1]) * -1, parseFloat(match[2]) * -1, parseFloat(match[3]) * -1];
                 }
 
                 if (match = towerOffsetRegex.exec(logLines[i])) {
@@ -216,119 +215,113 @@ $(function () {
                 }
             }
 
-            if (self.isProbing) {
+            if (this.isProbing) {
                 if (match = probePointRegex.exec(logLines[i])) {
-                    logProbePoint(self, parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]));
+                    this.logProbePoint(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]));
                 }
             }
 
             if (logLines[i] === "Recv: ok") {
-                if (self.isProbing) {
-                    self.isProbing = false;
-                    onProbingFinished(self);
+                if (this.isProbing) {
+                    this.isProbing = false;
+                    this.onProbingFinished();
                 }
 
-                if (self.isFetchingGeometry) {
-                    self.isFetchingGeometry = false;
-                    onFetchGeoFinished(self);
+                if (this.isFetchingGeometry) {
+                    this.isFetchingGeometry = false;
+                    this.onFetchGeoFinished();
                 }
             }
         }
 
-        self.currentGeometry(newGeometry);
+        this.currentGeometry(newGeometry);
     }
 
-    function fetchGeometry(self) {
+    fetchGeometry() {
         //debugger;
-        resetProbeData(self);
-        self.isFetchingGeometry = true;
-        if (self.isPrinterReady())
+        this.resetProbeData();
+        this.isFetchingGeometry = true;
+        if (this.isPrinterReady())
             OctoPrint.control.sendGcode("M503", null);
-        else parseResponse(self.simulatedM503, self);
+        else this.parseResponse(this.simulatedM503);
     }
 
-    function LoadGeometry(data, self) {
-        //debugger;
-        //self.probePoints = data.Points;
-        //self.ProbedRMS(data.RMS);
-        ConfigureGeometry(self, data.Geometry);
+    LoadGeometry(data) {
+        this.ConfigureGeometry(data.Geometry);
     }
 
-    function onProbingFinished(self) {
-        self.probedGeometries.unshift({
-            Name: "Trial #" + self.trialNumber++,
+    onProbingFinished() {
+        this.probedGeometries.unshift({
+            Name: "Trial #" + this.trialNumber++,
             Timestamp: new Date().toLocaleString(),
-            RMS: self.ProbedRMS(),
-            Points: self.probePoints,
-            Geometry: self.currentGeometry().Clone()
+            RMS: this.ProbedRMS(),
+            Points: this.probePoints,
+            Geometry: this.currentGeometry().Clone()
         });
-   
-        self.isReadyToCalibrate(true);
-        computeCorrections(self);
-        $("#collapseGeometry.in").collapse('hide');
-        //$("#collapseCalibration").collapse('show');
-        self.CalibrationControl.Show();
+
+        this.isReadyToCalibrate(true);
+        this.computeCorrections();
+        this.GeometryControl.Hide();
+        this.CalibrationControl.Show();
     }
 
-    function resetCalibrationData(self) {
-        self.CalibratedRMS(undefined);
-//        $("#collapseCalibration.in").collapse('hide');
-        self.CalibrationControl.Hide();
+    resetCalibrationData() {
+        this.CalibratedRMS(undefined);
+        this.CalibrationControl.Hide();
     }
 
-    function onFetchGeoFinished(self) {
-        //debugger;
-        self.isGeometryKnown(true);
-        resetCalibrationData(self);
-        $("#collapseGeometry").collapse('show');
+    onFetchGeoFinished() {
+        this.isGeometryKnown(true);
+        this.resetCalibrationData();
+        this.GeometryControl.Show();
     }
 
-    function computeCorrections(self) {
+    computeCorrections() {
         var factors = [
-            self.calibrate.EndStopOffset(),
-            self.calibrate.EndStopOffset(),
-            self.calibrate.EndStopOffset(),
-            self.calibrate.DeltaRadius(),
-            self.calibrate.TowerOffset(),
-            self.calibrate.TowerOffset(),
-            self.calibrate.RodLength(),
-            self.calibrate.StepsPerUnit(),
-            self.calibrate.StepsPerUnit(),
-            self.calibrate.StepsPerUnit(),
-            self.calibrate.DeltaRadiusAdjust(),
-            self.calibrate.DeltaRadiusAdjust(),
-            self.calibrate.DeltaRadiusAdjust() && !self.calibrate.DeltaRadius(),
-            self.calibrate.RodLenghtAdjust(),
-            self.calibrate.RodLenghtAdjust(),
-            self.calibrate.RodLenghtAdjust() && !self.calibrate.RodLength(),
-            /*self.calibrate.MaxHeight()*/];
+            this.calibrate.EndStopOffset(),
+            this.calibrate.EndStopOffset(),
+            this.calibrate.EndStopOffset(),
+            this.calibrate.DeltaRadius(),
+            this.calibrate.TowerOffset(),
+            this.calibrate.TowerOffset(),
+            this.calibrate.RodLength(),
+            this.calibrate.StepsPerUnit(),
+            this.calibrate.StepsPerUnit(),
+            this.calibrate.StepsPerUnit(),
+            this.calibrate.DeltaRadiusAdjust(),
+            this.calibrate.DeltaRadiusAdjust(),
+            this.calibrate.DeltaRadiusAdjust() && !this.calibrate.DeltaRadius(),
+            this.calibrate.RodLenghtAdjust(),
+            this.calibrate.RodLenghtAdjust(),
+            this.calibrate.RodLenghtAdjust() && !this.calibrate.RodLength(),
+            /*this.calibrate.MaxHeight()*/];
 
-        var result = DoDeltaCalibration(self.currentGeometry().Clone(), self.probePoints, factors);
-        self.CalibratedRMS(result.RMS.toFixed(5));
-        self.newGeometry(result.Geometry);
+        var result = DoDeltaCalibration(this.currentGeometry().Clone(), this.probePoints, factors);
+        this.CalibratedRMS(result.RMS.toFixed(5));
+        this.newGeometry(result.Geometry);
 
         console.log(result);
     }
 
-    function ConfigureGeometry(self, geometry) {
-        if (self.isPrinterReady())
+    ConfigureGeometry(geometry) {
+        if (this.isPrinterReady())
             SendGeometryToMachine(geometry);
-        self.currentGeometry(geometry);
-        $("#collapseGeometry").collapse('show');
-        resetProbeData(self);
-        resetCalibrationData(self);
+        this.currentGeometry(geometry);
+        this.GeometryControl.Show();
+        this.resetProbeData();
+        this.resetCalibrationData();
     }
 
-    function SendGeometryToMachine(geometry) {
+    SendGeometryToMachine(geometry) {
         OctoPrint.control.sendGcode(
-            ["M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4), 
+            ["M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4),
             "M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4),
             "M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4),
             "M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4),
             "M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4)], null);
     }
 
-    function request(type, command, args, successCb) {
+    request(type, command, args, successCb) {
         var data = function data() {
             if (command && args) return JSON.stringify({ command: command, args: args });
             if (command) return JSON.stringify({ command: command });
@@ -345,7 +338,7 @@ $(function () {
         });
     }
 
-    function preparePlot(surfacePlotDiv, bedRadius, probeCount) {
+    preparePlot(surfacePlotDiv, bedRadius, probeCount) {
         var scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
         //scene.fog = new THREE.FogExp2(0xffffff, 0.002);
@@ -363,15 +356,15 @@ $(function () {
                 new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.6, transparent: true })));
 
         // Axes arrows
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(bedRadius, 0, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0xff0000));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, bedRadius, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0x00ff00));
-        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, bedRadius), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius/2, 0x0000ff));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(bedRadius, 0, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius / 2, 0xff0000));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, bedRadius, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius / 2, 0x00ff00));
+        scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, bedRadius), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius / 2, 0x0000ff));
 
         var geometry = new THREE.BufferGeometry();
         var vertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
         geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
-        particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true}));
+        var particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true }));
         particles.geometry.setDrawRange(0, 0);
 
         scene.add(particles);
@@ -396,17 +389,17 @@ $(function () {
         return particles;
 
     }
-
+}
     /* view model class, parameters for constructor, container to bind to
      * Please see http://docs.octoprint.org/en/master/plugins/viewmodels.html#registering-custom-viewmodels for more details
      * and a full list of the available options.
      */
     OCTOPRINT_VIEWMODELS.push({
-        construct: LsqdeltacalibrationViewModel,
+        construct: LsqDeltaCalibrationViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", */ "settingsViewModel", "printerProfilesViewModel" ],
         // Elements to bind to, e.g. #settings_plugin_LSqDeltaCalibration, #tab_plugin_LSqDeltaCalibration, ...
         elements: [ "#tab_plugin_LSqDeltaCalibration" ]
     });
-});
+//});
 
