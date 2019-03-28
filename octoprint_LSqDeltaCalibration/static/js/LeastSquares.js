@@ -17,6 +17,36 @@ function fsquare(x) {
     return x * x;
 }
 
+class ProbingData{
+    constructor()
+    {
+        this.DataPoints = [];
+        this.Max = undefined;
+        this.Min = undefined;
+        this.RMS = undefined;
+        this.Observable = ko.observable(this);
+        this.sumOfSquares = 0;
+
+    }
+
+    AddPoint(x, y, z, error)
+    {
+        this.DataPoints.push({ X: x, Y: y, Z: z, Error: error });
+
+        if (this.Max === undefined || error > this.Max)
+            this.Max = error;
+
+        if (this.Min === undefined || error < this.Min)
+            this.Min = error;
+
+        this.sumOfSquares += error * error;
+
+        this.RMS = Math.sqrt(this.sumOfSquares / this.DataPoints.length);
+
+        this.Observable(this);
+    }
+}
+
 class CollapseControl {
     constructor(id) {
         this.controlElement = $(id)[0];
@@ -98,7 +128,6 @@ class Matrix
         }
     }
 }
-
 
 class DeltaGeometry
 {

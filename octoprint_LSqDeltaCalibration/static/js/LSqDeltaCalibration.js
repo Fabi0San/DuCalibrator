@@ -42,6 +42,7 @@ class LsqDeltaCalibrationViewModel {
         this.ProbedRMS = ko.observable();
         this.CalibratedRMS = ko.observable();
         this.probedGeometries = ko.observableArray([]);
+        this.ProbedData = new ProbingData();//.Observable;
 
         this.calibrate =
             {
@@ -220,6 +221,8 @@ class LsqDeltaCalibrationViewModel {
         this.plot.geometry.attributes.position.setXYZ(this.probePoints.length - 1, x, y, z * this.zScaleInfo.zScale);
         this.plot.geometry.setDrawRange(0, this.probePoints.length);
         this.plot.geometry.attributes.position.needsUpdate = true;
+
+        this.ProbedData.AddPoint(x, y, 0, z);
     }
 
     adjustZScale(zScaleInfo, z) {
