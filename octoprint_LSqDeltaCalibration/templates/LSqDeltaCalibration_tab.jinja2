@@ -41,10 +41,6 @@
         {{ _('Please connect your printer to get its capabilities') }}
       </div>
 
-      <h2>RMS <span data-bind="text: ProbedData.Observable().RMS"></span></h2>
-      <h2>Min <span data-bind="text: ProbedData.Observable().Min"></span></h2>
-      <h2>Max <span data-bind="text: ProbedData.Observable().Max"></span></h2>
-
       <h4>
         <a href="#collapseGeometry" id="collapseGeometryControl" data-toggle="collapse" class="collapsed" data-bind="visible: isGeometryKnown"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Current Geometry') }}
@@ -111,10 +107,17 @@
         </div>
       </div>
 
-
+      <script type="text/html" id="ProbingDataTemplate">
+        <span data-bind="visible: RMS">
+          {{ _('RMS') }}: <span data-bind="text: RMS.toFixed(4)"></span>
+          {{ _('Min') }}: <span data-bind="text: Min.toFixed(4)"></span>
+          {{ _('Max') }}: <span data-bind="text: Max.toFixed(4)"></span>
+        </span>
+      </script>
+      
       <h4>
-        <a href="#collapsePlot" id="collapsePlotControl"  data-toggle="collapse" class="collapsed" data-bind="visible: ProbedRMS"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-        {{ _('Probing') }} <span data-bind="visible: ProbedRMS">{{ _('RMS') }}: <span data-bind="text: ProbedRMS"></span></span>
+        <a href="#collapsePlot" id="collapsePlotControl"  data-toggle="collapse" class="collapsed" data-bind="visible: ProbedData().RMS"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        {{ _('Probing') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:ProbedData().RMS , data: ProbedData }"></span>
         <button class="btn btn-primary pull-right" data-bind="click: probeBed, enable: isReadyForCommands() && isGeometryKnown">{{ _('Probe bed') }}</button>
       </h4>
       <div class="row-fluid collapse" id="collapsePlot">

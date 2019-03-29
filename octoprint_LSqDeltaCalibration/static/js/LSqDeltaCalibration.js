@@ -42,7 +42,8 @@ class LsqDeltaCalibrationViewModel {
         this.ProbedRMS = ko.observable();
         this.CalibratedRMS = ko.observable();
         this.probedGeometries = ko.observableArray([]);
-        this.ProbedData = new ProbingData();//.Observable;
+        this.ProbedData = new ProbingData().Observable;
+        this.CalibratedData = new ProbingData().Observable;
 
         this.calibrate =
             {
@@ -116,6 +117,8 @@ class LsqDeltaCalibrationViewModel {
         this.isReadyToCalibrate(false);
         this.probePoints = [];
         this.ProbedRMS(undefined);
+        new ProbingData(this.ProbedData);
+
         if (this.plot) {
             this.plot.geometry.dispose();
             this.plot = null;
@@ -123,7 +126,7 @@ class LsqDeltaCalibrationViewModel {
 
         if (this.plotDivElement.firstChild)
             this.plotDivElement.removeChild(this.plotDivElement.firstChild);
-        this.PlotControl.Hide();
+        //this.PlotControl.Hide();
     }
 
     resetCalibrationData() {
@@ -154,7 +157,7 @@ class LsqDeltaCalibrationViewModel {
         var result = DoDeltaCalibration(this.currentGeometry().Clone(), this.probePoints, factors);
         this.CalibratedRMS(result.RMS.toFixed(5));
         this.newGeometry(result.Geometry);
-
+        
         console.log(result);
     }
 
@@ -222,7 +225,7 @@ class LsqDeltaCalibrationViewModel {
         this.plot.geometry.setDrawRange(0, this.probePoints.length);
         this.plot.geometry.attributes.position.needsUpdate = true;
 
-        this.ProbedData.AddPoint(x, y, 0, z);
+        this.ProbedData().AddPoint(x, y, 0, z);
     }
 
     adjustZScale(zScaleInfo, z) {
@@ -321,11 +324,12 @@ class LsqDeltaCalibrationViewModel {
 
     ConfigureGeometry(geometry) {
         if (this.isPrinterReady())
-            SendGeometryToMachine(geometry);
+            this.SendGeometryToMachine(geometry);
         this.currentGeometry(geometry);
         this.GeometryControl.Show();
         this.resetProbeData();
         this.resetCalibrationData();
+        this.PlotControl.Hide();
     }
 
     probeBed() {

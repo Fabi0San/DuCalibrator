@@ -18,15 +18,15 @@ function fsquare(x) {
 }
 
 class ProbingData{
-    constructor()
+    constructor(observable = ko.observable())
     {
         this.DataPoints = [];
         this.Max = undefined;
         this.Min = undefined;
         this.RMS = undefined;
-        this.Observable = ko.observable(this);
+        this.Observable = observable;
         this.sumOfSquares = 0;
-
+        this.Observable(this);
     }
 
     AddPoint(x, y, z, error)
