@@ -15,8 +15,6 @@ class LsqDeltaCalibrationViewModel {
         this.trialNumber = 0;
         this.plot = undefined;
         this.zScaleInfo = undefined;
-        this.probePoints = [];
-        this.sumOfSquares = 0;
 
         //config
         this.isSimulation = ko.observable(true);
@@ -24,7 +22,6 @@ class LsqDeltaCalibrationViewModel {
         this.probePointCount = ko.observable(50);
 
         // UI control
-        this.plotDivElement = $("#surfacePlotDiv")[0];
         this.isGeometryKnown = ko.observable(false);
         this.isReadyForCommands = function () { return (this.isSimulation() || this.isPrinterReady()) && !this.isProbing && !this.isFetchingGeometry; };
         this.isPrinterReady = ko.observable(false);
@@ -32,6 +29,7 @@ class LsqDeltaCalibrationViewModel {
         this.isProbing = false;
         this.isReadyToCalibrate = ko.observable(false);
 
+        this.plotDivElement = $("#surfacePlotDiv")[0];
         this.GeometryControl = new CollapseControl("#collapseGeometryControl");
         this.PlotControl = new CollapseControl("#collapsePlotControl");
         this.CalibrationControl = new CollapseControl("#collapseCalibrationControl");
@@ -39,11 +37,9 @@ class LsqDeltaCalibrationViewModel {
         // Observable data
         this.currentGeometry = ko.observable(new DeltaGeometry());
         this.newGeometry = ko.observable(new DeltaGeometry());
-        this.ProbedRMS = ko.observable();
-        this.CalibratedRMS = ko.observable();
-        this.probedGeometries = ko.observableArray([]);
         this.ProbedData = new ProbingData().Observable;
-        this.CalibratedData = new ProbingData().Observable;
+        this.CalibratedData = ko.observable(undefined);
+        this.probedGeometries = ko.observableArray([]);
 
         this.calibrate =
             {
@@ -95,8 +91,7 @@ class LsqDeltaCalibrationViewModel {
         this.probedGeometries.unshift({
             Name: "Trial #" + this.trialNumber++,
             Timestamp: new Date().toLocaleString(),
-            RMS: this.ProbedRMS(),
-            Points: this.probePoints,
+            RMS: this.ProbedData.peek().RMS.toFixed(3),
             Geometry: this.currentGeometry().Clone()
         });
 
@@ -115,8 +110,6 @@ class LsqDeltaCalibrationViewModel {
     // helpers
     resetProbeData() {
         this.isReadyToCalibrate(false);
-        this.probePoints = [];
-        this.ProbedRMS(undefined);
         new ProbingData(this.ProbedData);
 
         if (this.plot) {
@@ -130,7 +123,7 @@ class LsqDeltaCalibrationViewModel {
     }
 
     resetCalibrationData() {
-        this.CalibratedRMS(undefined);
+        this.CalibratedData(undefined);
         this.CalibrationControl.Hide();
     }
        
@@ -154,8 +147,8 @@ class LsqDeltaCalibrationViewModel {
             this.calibrate.RodLenghtAdjust() && !this.calibrate.RodLength(),
             /*this.calibrate.MaxHeight()*/];
 
-        var result = DoDeltaCalibration(this.currentGeometry().Clone(), this.probePoints, factors);
-        this.CalibratedRMS(result.RMS.toFixed(5));
+        var result = DoDeltaCalibration(this.currentGeometry().Clone(), this.ProbedData(), factors);
+        this.CalibratedData(result);
         this.newGeometry(result.Geometry);
         
         console.log(result);
@@ -215,17 +208,13 @@ class LsqDeltaCalibrationViewModel {
     }
 
     logProbePoint(x, y, z) {
-        this.probePoints.push([x, y, z]);
-        this.sumOfSquares += z * z;
-        this.ProbedRMS(Math.sqrt(this.sumOfSquares / this.probePoints.length).toFixed(5));
-
+        this.ProbedData.peek().AddPoint(x, y, 0, z);
         this.plot.geometry.scale(1, 1, this.adjustZScale(this.zScaleInfo, z));
 
-        this.plot.geometry.attributes.position.setXYZ(this.probePoints.length - 1, x, y, z * this.zScaleInfo.zScale);
-        this.plot.geometry.setDrawRange(0, this.probePoints.length);
+        this.plot.geometry.attributes.position.setXYZ(this.ProbedData.peek().DataPoints.length - 1, x, y, z * this.zScaleInfo.zScale);
+        this.plot.geometry.setDrawRange(0, this.ProbedData.peek().DataPoints.length);
         this.plot.geometry.attributes.position.needsUpdate = true;
 
-        this.ProbedData().AddPoint(x, y, 0, z);
     }
 
     adjustZScale(zScaleInfo, z) {
@@ -350,9 +339,6 @@ class LsqDeltaCalibrationViewModel {
             this.plotDivElement,
             radius,
             this.probePointCount());
-
-        this.sumOfSquares = 0;
-        this.ProbedRMS(0);
 
         if (this.isPrinterReady())
             OctoPrint.control.sendGcode(`G29.1 P1 I${this.probePointCount()} J${this.probeRadius()}`, null);

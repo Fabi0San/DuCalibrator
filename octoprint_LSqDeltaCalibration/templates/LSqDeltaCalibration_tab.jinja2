@@ -109,9 +109,9 @@
 
       <script type="text/html" id="ProbingDataTemplate">
         <span data-bind="visible: RMS">
-          {{ _('RMS') }}: <span data-bind="text: RMS.toFixed(4)"></span>
-          {{ _('Min') }}: <span data-bind="text: Min.toFixed(4)"></span>
-          {{ _('Max') }}: <span data-bind="text: Max.toFixed(4)"></span>
+          {{ _('RMS') }}: <span data-bind="text: RMS.toFixed(3)"></span>
+          {{ _('Min') }}: <span data-bind="text: Min.toFixed(3)"></span>
+          {{ _('Max') }}: <span data-bind="text: Max.toFixed(3)"></span>
         </span>
       </script>
       
@@ -127,7 +127,7 @@
       <div class="row-fluid">
         <h4>
           <a href="#collapseCalibration" id="collapseCalibrationControl"  data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-          {{ _('Calibration') }} <span data-bind="visible: CalibratedRMS">{{ _('RMS') }}: <span data-bind="text: CalibratedRMS"></span></span>
+          {{ _('Calibration') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:CalibratedData , data: CalibratedData }"></span>
           <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
         </h4>
         <div class="row-fluid collapse" id="collapseCalibration">
@@ -224,7 +224,7 @@
           {{ _('Probing history') }}</h4>
 
         <div class="row-fluid collapse" id="collapseGeoHistry">
-          <table class="table table-striped table-hover table-condensed table-hover" id="settings_deltaCalibration_probedGeometries" data-bind="bvisible: printerProfiles.profiles.items().length > 0" style="bdisplay: none">
+          <table class="table table-striped table-hover table-condensed table-hover" id="settings_deltaCalibration_probedGeometries">
             <thead>
               <tr>
                 <th class="settings_deltaCalibration_probedGeometries_name">{{ _('Name') }}</th>
