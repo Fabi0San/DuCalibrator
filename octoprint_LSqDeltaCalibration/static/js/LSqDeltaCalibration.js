@@ -105,6 +105,7 @@ class LsqDeltaCalibrationViewModel {
         this.isGeometryKnown(true);
         this.resetCalibrationData();
         this.GeometryControl.Show();
+        this.PlotControl.Hide();
     }
 
     // helpers
