@@ -175,8 +175,9 @@ class DeltaGeometry
     }
 
     GetCarriagePosition(position) {
-        return AllTowers.map(tower => this.TowerHeightSteps[tower] -
-            (this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower])); // fromBottom
+        return AllTowers.map(tower => Math.round // rounded to constrain to machine's adressable positions
+            (this.TowerHeightSteps[tower] -
+            (this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower]))); // fromBottom
     }
 
     CarriagemmFromBottom(machinePos, tower)
@@ -186,14 +187,18 @@ class DeltaGeometry
 
     GetZ(carriagePositions)
     {
+        return this.GetEffectorPosition(carriagePositions)[ZAxis];
+    }
+
+    GetEffectorPosition(carriagePositions) {
         var p = AllTowers.map(tower => ({
             x: (this.towerPositions[tower][XAxis]),
             y: (this.towerPositions[tower][YAxis]),
             z: ((this.TowerHeightSteps[tower] - carriagePositions[tower]) / this.StepsPerUnit[tower]),
             r: this.DiagonalRod + this.DiagonalRodAdjust[tower]
         }));
-        var p4 = trilaterate(p[0], p[1], p[2]);
-        return (p4[1].z);
+        var results = trilaterate(p[0], p[1], p[2]);
+        return [results[1].x, results[1].y, results[1].z];
     }
     
     ComputeDerivative(factor, carriagePositions)
@@ -261,32 +266,51 @@ function DebugPrint(s) {
     }
 }
 
-function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
+function SpiralPoints(n, radius) {
+    var a = radius / (2 * Math.sqrt(n * Math.PI));
+    var step_length = radius * radius / (2 * a * n);
+
+    var result = new Array(n);
+
+    for (var i = 0; i < n; i++) {
+        var angle = Math.sqrt( 2 * (i * step_length) / a);
+        var r = angle * a;
+
+        // polar to cartesian
+        var x = r * Math.cos(angle);
+        var y = r * Math.sin(angle);
+        result[i] = [x, y];
+    }
+
+    return result;
+}
+
+
+function DoDeltaCalibration(currentGeometry, probeData, factors) {
     var numFactors = 0;
     for (var i = 0; i < MaxFactors; i++)
         if (factors[i])
             numFactors++;
 
-    var numPoints = probedPoints.length;
+    var numPoints = probeData.DataPoints.length;
 
     if (numFactors > numPoints) {
         throw "Error: need at least as many points as factors you want to calibrate";
     }
 
     // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
-    var probedCarriagePositions = probedPoints.map(point => currentGeometry.GetCarriagePosition([point[XAxis], point[YAxis], 0.0]));
+    var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition([point.X, point.Y, point.Z]));
     var corrections = new Array(numPoints).fill(0.0);
-    var initialSumOfSquares =  probedPoints.reduce((acc, val) => acc += fsquare(val[ZAxis]), 0.0);
+    var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += fsquare(val.Error), 0.0);
     
     // Do 1 or more Newton-Raphson iterations
     var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
     var previousRms = initialRms;
-    var iteration = 0;
     var expectedRmsError;
     var bestRmsError = initialRms;
-    var bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit, currentGeometry.RadiusAdjust, currentGeometry.DiagonalRodAdjust);
-    var bestResiduals = probedPoints;
-    for (;;) {
+    var bestGeometry = currentGeometry.Clone();
+    var bestResiduals = probeData;
+    for (var iteration = 0; iteration<20; iteration++) {
         // Build a matrix of derivatives.
         var derivativeMatrix = new Matrix(numPoints, numFactors);
         for (var i = 0; i < numPoints; ++i) {
@@ -313,7 +337,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             }
             var temp = 0; 
             for (var k = 0; k < numPoints; ++k) {
-                temp += derivativeMatrix.data[k][i] * -(probedPoints[k][ZAxis] + corrections[k]);
+                temp += derivativeMatrix.data[k][i] * -(probeData.DataPoints[k].Error + corrections[k]);
             }
             normalMatrix.data[i][numFactors] = temp;
         }
@@ -331,7 +355,7 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             // Calculate and display the residuals
             var residuals = [];
             for (var i = 0; i < numPoints; ++i) {
-                var r = probedPoints[i][ZAxis];
+                var r = probeData.DataPoints[i].Error;
                 for (var j = 0; j < numFactors; ++j) {
                     r += solution[j] * derivativeMatrix.data[i][j];
                 }
@@ -346,32 +370,32 @@ function DoDeltaCalibration(currentGeometry, probedPoints, factors) {
             var expectedResiduals = new Array(numPoints);
             var sumOfSquares = 0.0;
             for (var i = 0; i < numPoints; ++i) {
-                var newZ = currentGeometry.GetZ(probedCarriagePositions[i]);
-                corrections[i] = newZ;
-                expectedResiduals[i] = probedPoints[i][ZAxis] + newZ;
+                var effector = currentGeometry.GetEffectorPosition(probedCarriagePositions[i]);
+                var correction = effector[ZAxis] - probeData.DataPoints[i].Z;
+                corrections[i] = correction;
+                expectedResiduals[i] = probeData.DataPoints[i].Error + correction;
                 sumOfSquares += fsquare(expectedResiduals[i]);
             }
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
-            DebugPrint("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms) + " improvement on baseline:" + (expectedRmsError - 0.01839501877423555));
+            DebugPrint("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
             previousRms = expectedRmsError;
         }
 
         if (expectedRmsError < bestRmsError) {
             bestRmsError = expectedRmsError;
-            bestGeometry = new DeltaGeometry(currentGeometry.DiagonalRod, currentGeometry.Radius, currentGeometry.Height, currentGeometry.EndStopOffset, currentGeometry.TowerOffset, currentGeometry.StepsPerUnit, currentGeometry.RadiusAdjust, currentGeometry.DiagonalRodAdjust);
+            bestGeometry = currentGeometry.Clone();
             bestResiduals = expectedResiduals;
             iteration = 0;
         }
-
-        ++iteration;
-        if (iteration == 20) { break; }
     }
     console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares / numPoints) + " after " + bestRmsError);
     
     return {
         Geometry: bestGeometry,
         RMS: bestRmsError,
+        Min: Math.min.apply(null, bestResiduals),
+        Max: Math.max.apply(null, bestResiduals),
         Residuals: bestResiduals
     };
 }
