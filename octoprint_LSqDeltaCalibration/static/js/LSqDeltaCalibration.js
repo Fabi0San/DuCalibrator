@@ -368,13 +368,11 @@ class LsqDeltaCalibrationViewModel {
 
     fetchGeometry() {
         //debugger;
-        var result = this.ar.Query("M503", str => str.includes("Recv: ok"), 10000);
-        result
-
         this.resetProbeData();
         this.isFetchingGeometry = true;
         if (this.isPrinterReady())
-            OctoPrint.control.sendGcode("M503", null);
+            this.ar.Query("M503", str => str.includes("Recv: ok"), 3000).then(value => this.parseResponse(value));
+            //OctoPrint.control.sendGcode("M503", null);
         else this.parseResponse(this.simulatedM503);
     }
 
@@ -427,7 +425,7 @@ class AsyncRequestor {
     ReceiveResponse(data) {
         if (this.currentRequest !== null) {
             var request = this.currentRequest;
-            request.response.push(data);
+            request.response = request.response.concat(data);
             if (request.isFinished(data)) {
                 this.EndRequest();
                 request.resolve(request.response);
@@ -442,7 +440,7 @@ class AsyncRequestor {
         this.currentRequest = request;
         this.sendRequestFunction(request.query);
         if (request.timeout) 
-            request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request);
+            request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request, this);
     }
 
     EndRequest() {
@@ -452,9 +450,9 @@ class AsyncRequestor {
         this.TryDequeue();
     }
 
-    Timeout(request) {
-        if (this.currentRequest === request) {
-            this.EndRequest();
+    Timeout(request, self) {
+        if (self.currentRequest === request) {
+            self.EndRequest();
             request.reject(request.response);
         }
     }
