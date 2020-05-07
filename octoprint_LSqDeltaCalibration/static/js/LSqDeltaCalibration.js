@@ -79,6 +79,10 @@ class LsqDeltaCalibrationViewModel {
         this.ar = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
     }
 
+    onBeforeBinding(){
+        this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
+    }
+
     //hooks
     fromCurrentData(data) {
         this.ar.ReceiveResponse(data.logs);
@@ -468,6 +472,6 @@ $(function () {
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", */ "settingsViewModel", "printerProfilesViewModel" ],
         // Elements to bind to, e.g. #settings_plugin_LSqDeltaCalibration, #tab_plugin_LSqDeltaCalibration, ...
-        elements: [ "#tab_plugin_LSqDeltaCalibration" ]
+        elements: [ "#tab_plugin_LSqDeltaCalibration",  "#settings_plugin_LSqDeltaCalibration" ]
     });
 });

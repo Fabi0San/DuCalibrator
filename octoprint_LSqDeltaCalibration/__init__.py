@@ -44,12 +44,6 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
             less=["less/LSqDeltaCalibration.less"]
         )
 
-    def get_template_configs(self):
-        return [
-            dict(type="navbar", custom_bindings=False),
-            dict(type="settings", custom_bindings=False)
-        ]
-
     ##~~ Softwareupdate hook
 
     def get_update_information(self):
