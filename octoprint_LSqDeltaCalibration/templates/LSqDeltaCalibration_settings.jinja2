@@ -1,8 +1,68 @@
 <form class="form-horizontal">
     <div class="control-group">
-        <label class="control-label">{{ _('URL') }}</label>
+        <label class="control-label">{{ _('cmdFetchSettings') }}</label>
         <div class="controls">
-            <input type="text" class="input-block-level" data-bind="value: settings.plugins.helloworld.url">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.cmdFetchSettings">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('cmdSaveSettings') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.cmdSaveSettings">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('cmdStepsPerUnit') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.cmdStepsPerUnit">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('cmdEndStopOffset') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.cmdEndStopOffset">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('cmdDeltaConfig') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.cmdDeltaConfig">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsStepsPerUnit') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsStepsPerUnit">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsEndStopOffset') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsEndStopOffset">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsRadiusHeightRod') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsRadiusHeightRod">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsTowerAngleOffset') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsTowerAngleOffset">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsRadiusOffset') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsRadiusOffset">
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">{{ _('idsRodLenOffset') }}</label>
+        <div class="controls">
+            <input type="text" class="input-small" data-bind="value: settings.plugins.LSqDeltaCalibration.idsRodLenOffset">
         </div>
     </div>
 </form>

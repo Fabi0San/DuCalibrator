@@ -21,11 +21,20 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
     def get_settings_defaults(self):
         return dict(
             # put your plugin's default settings here
-            url="https://en.wikipedia.org/wiki/Hello_world"
+            cmdFetchSettings="M503",
+            cmdSaveSettings="M500",
+            cmdStepsPerUnit="M92",
+            idsStepsPerUnit="XYZ",
+            cmdEndStopOffset="M666",
+            idsEndStopOffset="XYZ",         
+            cmdDeltaConfig="M665",
+            idsRadiusHeightRod="RHL",
+            idsTowerAngleOffset="XYZ",
+            idsRadiusOffset="ABC",
+            idsRodLenOffset="IJK",
         )
-
+   
     ##~~ AssetPlugin mixin
-
     def get_assets(self):
         # Define your plugin's asset files to automatically include in the
         # core UI here.
@@ -34,6 +43,12 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
             css=["css/LSqDeltaCalibration.css"],
             less=["less/LSqDeltaCalibration.less"]
         )
+
+    def get_template_configs(self):
+        return [
+            dict(type="navbar", custom_bindings=False),
+            dict(type="settings", custom_bindings=False)
+        ]
 
     ##~~ Softwareupdate hook
 
