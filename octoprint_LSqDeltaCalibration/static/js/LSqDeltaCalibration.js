@@ -15,6 +15,7 @@ class LsqDeltaCalibrationViewModel {
         this.trialNumber = 0;
         this.plot = undefined;
         this.zScaleInfo = undefined;
+        this.settings = undefined;
 
         //config
         this.isSimulation = ko.observable(true);
@@ -79,8 +80,23 @@ class LsqDeltaCalibrationViewModel {
         this.ar = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
     }
 
+    onSettingsBeforeSave()
+        {
+            this.geometryElementParsers = [
+                new GeometryElementParser(this.settings.cmdStepsPerUnit(), this.settings.idsStepsPerUnit(), function(geometry, value) { geometry.StepsPerUnit = value }, function (geometry) { return geometry.StepsPerUnit }),
+                new GeometryElementParser(this.settings.cmdEndStopOffset(), this.settings.idsEndStopOffset(), function(geometry, value) { geometry.EndStopOffset = value }, function (geometry) { return geometry.EndStopOffset }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsTowerAngleOffset(), function(geometry, value) { geometry.TowerOffset = value }, function (geometry) { return geometry.TowerOffset }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusOffset(), function(geometry, value) { geometry.RadiusAdjust = value }, function (geometry) { return geometry.RadiusAdjust }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRodLenOffset(), function(geometry, value) { geometry.DiagonalRodAdjust = value }, function (geometry) { return geometry.DiagonalRodAdjust }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[0], function(geometry, value) { geometry.Radius = value }, function (geometry) { return geometry.Radius }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[1], function(geometry, value) { geometry.Height = value }, function (geometry) { return geometry.Height }),
+                new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[2], function(geometry, value) { geometry.DiagonalRod = value }, function (geometry) { return geometry.DiagonalRod }),
+            ];
+        }
+
     onBeforeBinding(){
         this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
+        this.onSettingsBeforeSave();
     }
 
     //hooks
@@ -401,6 +417,65 @@ class LsqDeltaCalibrationViewModel {
         });
     }
 
+}
+
+class GeometryElementParser {
+    constructor(command, element, setFunction, getFunction)
+    {
+        this.command = command;
+        this.element = element && element.length > 0 ? Array.from(element) : new Array(0);
+        this.setFunction = setFunction;
+        this.getFunction = getFunction;
+        this.regex = this.element.map( e => new RegExp(`${command} .*${e}(-?\\d+\\.?\\d*)`));
+    }
+
+    ParseLog(logLine, geometry)
+    {
+        debugger;
+        if(this.element.length == 0)
+        {
+            return;    
+        }
+
+        var match;
+
+        if(this.element.length == 1)
+        {
+            if(match = this.regex.exec(logLine))
+                this.setFunction(geometry, parseFloat(match[1]));    
+            return;
+        }
+
+        var result = this.getFunction(geometry);
+        for (let i = 0; i < this.regex.length; i++) {
+            if(match = this.regex[i].exec(logLine))
+                result[i] = parseFloat(match[1])
+            const element = this.regex[i];            
+        }
+
+        this.setFunction(geometry, result);
+    }
+
+    GetCommand(geometry)
+    {
+        if(this.element.length == 0)
+        {
+            return;    
+        }
+
+        if(this.element.length == 1)
+        {
+            return `${this.command} ${this.element}${this.getFunction(geometry)}`;
+        }
+
+        var value = this.getFunction(geometry);
+        var result = this.command;
+        for (let i = 0; i < this.element.length; i++) {
+            result += ` ${this.element[i]}${value[i].toFixed(4)}`;            
+        }
+
+        return result;
+    }
 }
 
 class AsyncRequestor {
