@@ -80,6 +80,7 @@ class LsqDeltaCalibrationViewModel {
         this.ar = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
     }
 
+    //hooks
     onSettingsBeforeSave()
         {
             this.geometryElementParsers = [
@@ -99,7 +100,6 @@ class LsqDeltaCalibrationViewModel {
         this.onSettingsBeforeSave();
     }
 
-    //hooks
     fromCurrentData(data) {
         this.ar.ReceiveResponse(data.logs);
         this.parseResponse(data.logs);
@@ -259,16 +259,23 @@ class LsqDeltaCalibrationViewModel {
 
     // Printer interface
 
+    parsefetchGeoResponse(logLines){
+        var newGeometry = this.currentGeometry();
+
+        for (var i = 0; i < logLines.length; i++){ 
+            this.geometryElementParsers.forEach(element => element.ParseLog(newGeometry, logLines[i]));
+        }
+        
+        this.isFetchingGeometry = false;
+        this.onFetchGeoFinished();
+        this.currentGeometry(newGeometry);        
+    }
+
     parseResponse(logLines) {
         var probePointRegex = /PROBE: X(-?\d+\.?\d*), Y(-?\d+\.?\d*), Z(-?\d+\.?\d*)/;
         var match;
 
-        var newGeometry = this.currentGeometry();
         for (var i = 0; i < logLines.length; i++) {            
-
-            if (this.isFetchingGeometry) 
-                this.geometryElementParsers.forEach(element => element.ParseLog(newGeometry, logLines[i]));        
-
             if (this.isProbing) {
                 if (match = probePointRegex.exec(logLines[i])) {
                     this.logProbePoint(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]));
@@ -280,24 +287,12 @@ class LsqDeltaCalibrationViewModel {
                     this.isProbing = false;
                     this.onProbingFinished();
                 }
-
-                if (this.isFetchingGeometry) {
-                    this.isFetchingGeometry = false;
-                    this.onFetchGeoFinished();
-                }
             }
         }
-
-        this.currentGeometry(newGeometry);
     }
 
     SendGeometryToMachine(geometry) {
-        OctoPrint.control.sendGcode(
-            ["M92 X" + geometry.StepsPerUnit[0].toFixed(4) + " Y" + geometry.StepsPerUnit[1].toFixed(4) + " Z" + geometry.StepsPerUnit[2].toFixed(4),
-            "M666 X" + (geometry.EndStopOffset[0] * -1).toFixed(4) + " Y" + (geometry.EndStopOffset[1] * -1).toFixed(4) + " Z" + (geometry.EndStopOffset[2] * -1).toFixed(4),
-            "M665 A" + geometry.RadiusAdjust[0].toFixed(4) + " B" + geometry.RadiusAdjust[1].toFixed(4) + " C" + geometry.RadiusAdjust[2].toFixed(4),
-            "M665 D" + geometry.TowerOffset[0].toFixed(4) + " E" + geometry.TowerOffset[1].toFixed(4) + " H" + geometry.TowerOffset[2].toFixed(4),
-            "M665 L" + geometry.DiagonalRod.toFixed(4) + " R" + geometry.Radius.toFixed(4) + " Z" + geometry.Height.toFixed(4)], null);
+        OctoPrint.control.sendGcode(this.geometryElementParsers.map(element => element.GetCommand(geometry)), null);
     }
 
     // ui commands
@@ -319,6 +314,7 @@ class LsqDeltaCalibrationViewModel {
         this.isProbing = true;
         this.resetProbeData();
 
+        // fetching the actual printer radius so the plot look to scale
         var radius = this.printerProfilesViewModel.currentProfileData().volume.width() / 2;
 
         this.zScaleInfo = {
@@ -357,13 +353,11 @@ class LsqDeltaCalibrationViewModel {
     }
 
     fetchGeometry() {
-        //debugger;
         this.resetProbeData();
         this.isFetchingGeometry = true;
         if (this.isPrinterReady())
-            this.ar.Query("M503", str => str.includes("Recv: ok"), 3000).then(value => this.parseResponse(value));
-            //OctoPrint.control.sendGcode("M503", null);
-        else this.parseResponse(this.simulatedM503);
+            this.ar.Query(this.settings.cmdFetchSettings, str => str.includes("Recv: ok"), 3000).then(value => this.parsefetchGeoResponse(value));
+        else this.parsefetchGeoResponse(this.simulatedM503);
     }
 
     LoadGeometry(data) {
