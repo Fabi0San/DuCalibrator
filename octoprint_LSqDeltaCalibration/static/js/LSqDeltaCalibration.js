@@ -260,44 +260,14 @@ class LsqDeltaCalibrationViewModel {
     // Printer interface
 
     parseResponse(logLines) {
-        var stepsPerUnitRegex = /M92 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
-        var endStopOffsetRegex = /M666 X(-?\d+\.?\d*) Y(-?\d+\.?\d*) Z(-?\d+\.?\d*)/;
-        var radiusOffsetRegex = /M665 .*A(-?\d+\.?\d*) B(-?\d+\.?\d*) C(-?\d+\.?\d*).*/;
-        var towerOffsetRegex = /M665 .*D(-?\d+\.?\d*) E(-?\d+\.?\d*) H(-?\d+\.?\d*)/;
-        var rodLenAndRadiusRegex = /M665 .*L(-?\d+\.?\d*) R(-?\d+\.?\d*)/;
-        var maxHeightRegex = /M665 .*Z(-?\d+\.?\d*)/;
         var probePointRegex = /PROBE: X(-?\d+\.?\d*), Y(-?\d+\.?\d*), Z(-?\d+\.?\d*)/;
         var match;
 
         var newGeometry = this.currentGeometry();
-        for (var i = 0; i < logLines.length; i++) {
+        for (var i = 0; i < logLines.length; i++) {            
 
-            if (this.isFetchingGeometry) {
-                if (match = stepsPerUnitRegex.exec(logLines[i])) {
-                    newGeometry.StepsPerUnit = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
-                }
-
-                if (match = endStopOffsetRegex.exec(logLines[i])) {
-                    newGeometry.EndStopOffset = [parseFloat(match[1]) * -1, parseFloat(match[2]) * -1, parseFloat(match[3]) * -1];
-                }
-
-                if (match = towerOffsetRegex.exec(logLines[i])) {
-                    newGeometry.TowerOffset = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
-                }
-
-                if (match = radiusOffsetRegex.exec(logLines[i])) {
-                    newGeometry.RadiusAdjust = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
-                }
-
-                if (match = rodLenAndRadiusRegex.exec(logLines[i])) {
-                    newGeometry.DiagonalRod = parseFloat(match[1]);
-                    newGeometry.Radius = parseFloat(match[2]);
-                }
-
-                if (match = maxHeightRegex.exec(logLines[i])) {
-                    newGeometry.Height = parseFloat(match[1]);
-                }
-            }
+            if (this.isFetchingGeometry) 
+                this.geometryElementParsers.forEach(element => element.ParseLog(newGeometry, logLines[i]));        
 
             if (this.isProbing) {
                 if (match = probePointRegex.exec(logLines[i])) {
@@ -429,9 +399,8 @@ class GeometryElementParser {
         this.regex = this.element.map( e => new RegExp(`${command} .*${e}(-?\\d+\\.?\\d*)`));
     }
 
-    ParseLog(logLine, geometry)
+    ParseLog(geometry, logLine)
     {
-        debugger;
         if(this.element.length == 0)
         {
             return;    
@@ -441,7 +410,7 @@ class GeometryElementParser {
 
         if(this.element.length == 1)
         {
-            if(match = this.regex.exec(logLine))
+            if(match = this.regex[0].exec(logLine))
                 this.setFunction(geometry, parseFloat(match[1]));    
             return;
         }
@@ -450,7 +419,6 @@ class GeometryElementParser {
         for (let i = 0; i < this.regex.length; i++) {
             if(match = this.regex[i].exec(logLine))
                 result[i] = parseFloat(match[1])
-            const element = this.regex[i];            
         }
 
         this.setFunction(geometry, result);
