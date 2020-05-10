@@ -311,7 +311,10 @@ class LsqDeltaCalibrationViewModel {
     this.PlotControl.Hide();
   }
 
-  probeBed() {
+  async probeBed() {
+    this.ProbeBed(10, 10);
+    return;
+
     this.isProbing = true;
     this.resetProbeData();
 
@@ -363,6 +366,32 @@ class LsqDeltaCalibrationViewModel {
 
   LoadGeometry(data) {
     this.ConfigureGeometry(data.Geometry);
+  }
+
+  async ProbeBed(x, y)
+  {
+      const commands = [
+          `G0 Z5`, // safe height
+          `G0 X${x} Y${y}`, // position
+          `G30`, // probe
+          `M118 DONE_PROBING` // signal were done
+      ];
+
+      var result = await this.ar.Query(commands, str => str.includes("Recv: DONE_PROBING"), 10000);
+
+      console.log(result);
+
+      console.log(this.ParseProbingResponse(result));
+  }
+
+  ParseProbingResponse(response)
+  {
+    const probePointRegex = /Bed X: (-?\d+\.?\d*) Y: (-?\d+\.?\d*) Z: (-?\d+\.?\d*)/;
+    var match;
+
+    for (var i = 0; i < response.length; i++)       
+        if (match = probePointRegex.exec(response[i]))
+          return [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
   }
     
   request(type, command, args, successCb) {
