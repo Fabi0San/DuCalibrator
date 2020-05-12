@@ -1,22 +1,49 @@
 // Class abstracting the machine being calibrated
 class DuCalMachine 
 {
-    constructor(getSettings)
+    constructor(settings)
     {
-        this.getSettings = getSettings;
+        this.settings = settings;
         this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
+
         this.IsReady = ko.observable(false);
+        this.Geometry = ko.observable(undefined);
+        
+        this.BuildGeometryParsers();
+    }
+
+    BuildGeometryParsers()
+    {
+        this.geometryElementParsers = [
+            new GeometryElementParser(this.settings.cmdStepsPerUnit(), this.settings.idsStepsPerUnit(), (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
+            new GeometryElementParser(this.settings.cmdEndStopOffset(), this.settings.idsEndStopOffset(), (geometry, value) => geometry.EndStopOffset = value, (geometry) => geometry.EndStopOffset),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsTowerAngleOffset(), (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusOffset(), (geometry, value) => geometry.RadiusAdjust = value, (geometry) => geometry.RadiusAdjust),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRodLenOffset(), (geometry, value) => geometry.DiagonalRodAdjust = value, (geometry) => geometry.DiagonalRodAdjust),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
+            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
+        ];
     }
 
     ParseData(data)
     {
         this.comms.ReceiveResponse(data.logs);
-        this.isPrinterReady(data.state.flags.ready);
+        this.IsReady(data.state.flags.ready);
     }
 
     async GetGeometry()
     {
-        this.ar.Query(this.settings.cmdFetchSettings(), str => str.includes("Recv: ok"), 3000).then(value => this.parsefetchGeoResponse(value));
+        const response = await this.comms.Query(this.settings.cmdFetchSettings(), str => str.includes("Recv: ok"), 3000);
+
+        var newGeometry = this.Geometry() ?? new DeltaGeometry() ;
+
+        for (var i = 0; i < response.length; i++) {
+            this.geometryElementParsers.forEach(element => element.ParseLog(newGeometry, response[i]));
+        }
+
+        this.Geometry(newGeometry);
+        return newGeometry;
     }
 }
 
