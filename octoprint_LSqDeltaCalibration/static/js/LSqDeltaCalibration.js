@@ -21,7 +21,7 @@ class LsqDeltaCalibrationViewModel {
         this.isSimulation = ko.observable(true);
         this.isTest = ko.observable(true);
         this.probeRadius = ko.observable(this.printerProfilesViewModel.currentProfileData().volume.width() / 2);
-        this.probePointCount = ko.observable(50);
+        this.probePointCount = ko.observable(15);
 
         // UI control
         this.isGeometryKnown = () => this.machine().Geometry() != undefined;
@@ -222,7 +222,8 @@ class LsqDeltaCalibrationViewModel {
 
     }
 
-    logProbePoint(x, y, z) {
+    logProbePoint(x, y, z) 
+    {
         this.ProbedData.peek().AddPoint(x, y, 0, z);
         this.plot.geometry.scale(1, 1, this.adjustZScale(this.zScaleInfo, z));
 
@@ -257,10 +258,8 @@ class LsqDeltaCalibrationViewModel {
         this.ConfigureGeometry(this.newGeometry());
     }
 
-    ConfigureGeometry(geometry) {
-        if (this.isPrinterReady())
-            this.SendGeometryToMachine(geometry);
-        // this.currentGeometry(geometry);
+    async ConfigureGeometry(geometry) {
+        await this.machine().SetGeometry(geometry);
         this.GeometryControl.Show();
         this.resetProbeData();
         this.resetCalibrationData();
@@ -269,10 +268,9 @@ class LsqDeltaCalibrationViewModel {
 
     async probeBed() {
 
-        //this.ProbeBed(10, 10);
+        //console.log( await this.machine().ProbeBed(10, 10));
 
-        this.machine().SetGeometry(this.currentGeometry().Clone());
-        return;
+        //return;
 
         this.isProbing = true;
         this.resetProbeData();
@@ -295,6 +293,16 @@ class LsqDeltaCalibrationViewModel {
 
         this.PlotControl.Show();
 
+        var points = SpiralPoints(this.probePointCount(), this.probeRadius());
+        for(const point of points)
+        {
+            const probe = await this.machine().ProbeBed(point[0],point[1]);
+            this.logProbePoint(probe[0], probe[1], probe[2]);
+        }
+        this.onProbingFinished();
+        return;
+
+        /*
         if (this.isTest()) {
             var points = SpiralPoints(this.probePointCount(), this.probeRadius());
             var geo = this.currentGeometry().Clone();
@@ -307,7 +315,7 @@ class LsqDeltaCalibrationViewModel {
             newPoints.map(point => (this.logProbePoint(point[0], point[1], point[2])));
             this.onProbingFinished();
             return;
-        }
+        }*/
 
         if (this.isPrinterReady())
             OctoPrint.control.sendGcode(`G29.1 P1 I${this.probePointCount()} J${this.probeRadius()}`, null);
@@ -329,47 +337,6 @@ class LsqDeltaCalibrationViewModel {
 
     LoadGeometry(data) {
         this.ConfigureGeometry(data.Geometry);
-    }
-
-    async ProbeBed(x, y) {
-        const commands = [
-            `G0 Z5`, // safe height
-            `G0 X${x} Y${y}`, // position
-            `G30`, // probe
-            `M118 DONE_PROBING` // signal were done
-        ];
-
-        var result = await this.ar.Query(commands, str => str.includes("Recv: DONE_PROBING"), 10000);
-
-        console.log(result);
-
-        console.log(this.ParseProbingResponse(result));
-    }
-
-    ParseProbingResponse(response) {
-        const probePointRegex = /Bed X: (-?\d+\.?\d*) Y: (-?\d+\.?\d*) Z: (-?\d+\.?\d*)/;
-        var match;
-
-        for (var i = 0; i < response.length; i++)
-            if (match = probePointRegex.exec(response[i]))
-                return [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
-    }
-
-    request(type, command, args, successCb) {
-        var data = function data() {
-            if (command && args) return JSON.stringify({ command: command, args: args });
-            if (command) return JSON.stringify({ command: command });
-        };
-        $.ajax({
-            url: '/api' + PLUGIN_BASEURL + 'LSqDeltaCalibration',
-            type: type,
-            dataType: 'json',
-            data: data(),
-            contentType: 'application/json; charset=UTF-8',
-            success: function success(data) {
-                if (successCb) successCb(data);
-            }
-        });
     }
 
 }

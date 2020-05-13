@@ -33,9 +33,20 @@ class DuCalMachine
         this.IsReady(data.state.flags.ready);
     }
 
-    async GetGeometry()
+    async Init()
     {
+        await this.comms.Query(["G28","M204 T200", "G0 Z5 F12000", "M118 DONE_INIT"] , str => str.includes("Recv: DONE_INIT"));
+    }
+
+    async GetGeometry()
+    {        
         this.IsBusy(true);
+
+        if(!this.Geometry())
+        {
+            await this.Init();
+        }
+
         const commands = [this.settings.cmdFetchSettings(), "M118 DONE_GET_GEOMETRY"];
 
         const response = await this.comms.Query(commands, str => str.includes("Recv: DONE_GET_GEOMETRY"));
@@ -61,6 +72,30 @@ class DuCalMachine
         const result = await this.GetGeometry();
         this.IsBusy(false);
         return result;
+    }
+
+    async ProbeBed(x, y) 
+    {
+        this.IsBusy(true);
+
+        const commands = [
+            `G0 Z5`, // safe height
+            `G0 X${x} Y${y}`, // position
+            `G30`, // probe
+            `M118 DONE_PROBING` // signal were done
+        ];
+
+        var response = await this.comms.Query(commands, str => str.includes("Recv: DONE_PROBING"));
+
+        const probePointRegex = /Bed X: (-?\d+\.?\d*) Y: (-?\d+\.?\d*) Z: (-?\d+\.?\d*)/;
+        var match;
+
+        this.IsBusy(false);
+
+        for (var i = 0; i < response.length; i++)
+            if (match = probePointRegex.exec(response[i]))
+                return [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+
     }
 }
 
@@ -126,7 +161,7 @@ class AsyncRequestor {
     }
 
     Executor(query, isFinished, timeout, resolve, reject) {
-        this.requestQueue.push({ query: query, isFinished: isFinished, timeout: timeout, resolve: resolve, reject: reject, response: [], timeoutHandle: null });
+        this.requestQueue.push({ query: query, isFinished: isFinished, timeout: timeout, resolve: resolve, reject: reject, response: [], timeoutHandle: null , responseWatermark: 0});
         this.TryDequeue();
     }
 
@@ -156,11 +191,14 @@ class AsyncRequestor {
         this.sendRequestFunction(request.query);
         if (request.timeout)
             request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request, this);
+        request.watchdogHandle = setInterval(this.Watchdog, 3000, request, this);
     }
 
     EndRequest() {
         if (this.currentRequest.timeoutHandle)
             clearTimeout(this.currentRequest.timeoutHandle);
+        if(this.currentRequest.watchdogHandle)
+            clearInterval(this.currentRequest.watchdogHandle);
         this.currentRequest = null;
         this.TryDequeue();
     }
@@ -171,4 +209,13 @@ class AsyncRequestor {
             request.reject(request.response);
         }
     }
+
+    Watchdog(request, self) {
+        // are we still waiting on our request?
+        if (self.currentRequest === request) 
+            if(request.responseWatermark == request.response.length)
+                self.sendRequestFunction("M118");
+                else request.responseWatermark = request.response.length;
+    }
+
 }
