@@ -24,8 +24,8 @@ class LsqDeltaCalibrationViewModel {
         this.probePointCount = ko.observable(50);
 
         // UI control
-        this.isGeometryKnown = () => this.machine.Geometry != undefined;
-        this.isReadyForCommands = ()=> this.machine.IsReady;  //function () { return (this.isSimulation() || this.isPrinterReady()) && !this.isProbing && !this.isFetchingGeometry; };
+        this.isGeometryKnown = () => this.machine().Geometry() != undefined;
+        this.isReadyForCommands = ()=> this.machine().IsReady() && !this.machine().IsBusy();  //function () { return (this.isSimulation() || this.isPrinterReady()) && !this.isProbing && !this.isFetchingGeometry; };
         this.isPrinterReady = ko.observable(false);
         this.isFetchingGeometry = false;
         this.isProbing = false;
@@ -37,7 +37,7 @@ class LsqDeltaCalibrationViewModel {
         this.CalibrationControl = new CollapseControl("#collapseCalibrationControl");
 
         // Observable data
-        this.currentGeometry = ko.observable(new DeltaGeometry());
+        this.currentGeometry = ()=>this.machine()?.Geometry();
         this.newGeometry = ko.observable(new DeltaGeometry());
         this.ProbedData = new ProbingData().Observable;
         this.CalibratedData = ko.observable(undefined);
@@ -78,8 +78,7 @@ class LsqDeltaCalibrationViewModel {
          */
 
         this.ar = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
-        this.machine = undefined;
-        
+        this.machine = new ko.observable(undefined);        
     }
 
     //hooks
@@ -92,21 +91,21 @@ class LsqDeltaCalibrationViewModel {
     }
 
     fromCurrentData(data) {
-        //this.ar.ReceiveResponse(data.logs);
-        //this.parseResponse(data.logs);
         this.fromHistoryData(data);
-        this.machine?.ParseData(data);        
+        this.machine()?.ParseData(data);        
     }
 
     fromHistoryData(data) {
-        this.isPrinterReady(data.state.flags.ready);
+        this.latestData = data;
     }
 
     // events
     ReloadSettings()
     {
         this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
-        this.machine = new DuCalMachine(this.settings);
+        this.machine(new DuCalMachine(this.settings));
+        this.machine().ParseData(this.latestData);
+        this.GeometryControl.Hide();
     }
 
     onProbingFinished() {
@@ -121,13 +120,6 @@ class LsqDeltaCalibrationViewModel {
         this.computeCorrections();
         this.GeometryControl.Hide();
         this.CalibrationControl.Show();
-    }
-
-    onFetchGeoFinished() {
-        //this.isGeometryKnown(true);
-        this.resetCalibrationData();
-        this.GeometryControl.Show();
-        this.PlotControl.Hide();
     }
 
     // helpers
@@ -268,7 +260,7 @@ class LsqDeltaCalibrationViewModel {
     ConfigureGeometry(geometry) {
         if (this.isPrinterReady())
             this.SendGeometryToMachine(geometry);
-        this.currentGeometry(geometry);
+        // this.currentGeometry(geometry);
         this.GeometryControl.Show();
         this.resetProbeData();
         this.resetCalibrationData();
@@ -276,7 +268,10 @@ class LsqDeltaCalibrationViewModel {
     }
 
     async probeBed() {
-        this.ProbeBed(10, 10);
+
+        //this.ProbeBed(10, 10);
+
+        this.machine().SetGeometry(this.currentGeometry().Clone());
         return;
 
         this.isProbing = true;
@@ -323,11 +318,13 @@ class LsqDeltaCalibrationViewModel {
     async fetchGeometry() {
         this.resetProbeData();
         this.isFetchingGeometry = true;
-        var newGeometry = await this.machine.GetGeometry();
+        var newGeometry = await this.machine().GetGeometry();
 
-        this.currentGeometry(newGeometry);
+        // this.currentGeometry(newGeometry);
         this.isFetchingGeometry = false;
-        this.onFetchGeoFinished();
+        this.resetCalibrationData();
+        this.GeometryControl.Show();
+        this.PlotControl.Hide();
     }
 
     LoadGeometry(data) {
