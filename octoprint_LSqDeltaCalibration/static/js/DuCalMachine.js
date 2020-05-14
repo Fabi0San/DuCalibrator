@@ -4,7 +4,8 @@ class DuCalMachine
     constructor(settings)
     {
         this.settings = settings;
-        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
+        this.PopulateCommands();
+        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req), this.commands.Echo);
 
         this.IsReady = ko.observable(false);
         this.IsBusy = ko.observable(false);
@@ -16,15 +17,35 @@ class DuCalMachine
     BuildGeometryParsers()
     {
         this.geometryElementParsers = [
-            new GeometryElementParser(this.settings.cmdStepsPerUnit(), this.settings.idsStepsPerUnit(), (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
-            new GeometryElementParser(this.settings.cmdEndStopOffset(), this.settings.idsEndStopOffset(), (geometry, value) => geometry.EndStopOffset = value, (geometry) => geometry.EndStopOffset),
-            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsTowerAngleOffset(), (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
-            //new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusOffset(), (geometry, value) => geometry.RadiusAdjust = value, (geometry) => geometry.RadiusAdjust),
-            //new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRodLenOffset(), (geometry, value) => geometry.DiagonalRodAdjust = value, (geometry) => geometry.DiagonalRodAdjust),
-            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
-            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
-            new GeometryElementParser(this.settings.cmdDeltaConfig(), this.settings.idsRadiusHeightRod()[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
+            new GeometryElementParser(this.commands.StepsPerUnit, this.commands.idsStepsPerUnit, (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
+            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value, (geometry) => geometry.EndStopOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
         ];
+    }
+
+    PopulateCommands()
+    {
+        this.commands = 
+        {
+            Init: ["G28","M204 T200", "G0 F12000"],
+            Echo: "M118",
+            Move: "G0",
+            ProbeBed: "G30",
+            FetchSettings: "M503",
+            SaveSettings: "M500",
+            StepsPerUnit: "M92",
+            EndStopOffset: "M666",
+            DeltaConfig: "M665",
+            idsRadiusHeightRod: "RHL",
+            idsTowerAngleOffset: "XYZ",
+            idsEndStopOffset: "XYZ",         
+            idsStepsPerUnit: "XYZ",
+            //idsRadiusOffset="ABC",
+            //idsRodLenOffset="IJK",
+        }
     }
 
     ParseData(data)
@@ -35,7 +56,7 @@ class DuCalMachine
 
     async Init()
     {
-        await this.comms.Query(["G28","M204 T200", "G0 Z5 F12000", "M118 DONE_INIT"] , str => str.includes("Recv: DONE_INIT"));
+        await this.comms.Execute(this.commands.Init);
     }
 
     async GetGeometry()
@@ -47,9 +68,7 @@ class DuCalMachine
             await this.Init();
         }
 
-        const commands = [this.settings.cmdFetchSettings(), "M118 DONE_GET_GEOMETRY"];
-
-        const response = await this.comms.Query(commands, str => str.includes("Recv: DONE_GET_GEOMETRY"));
+        const response = await this.comms.Execute(this.commands.FetchSettings);
 
         var newGeometry = this.Geometry() ?? new DeltaGeometry() ;
 
@@ -65,10 +84,8 @@ class DuCalMachine
     async SetGeometry(geometry)
     {
         this.IsBusy(true);
-        const commands = this.geometryElementParsers.map(element => element.GetCommand(geometry))
-        commands.push("G28", "M118 DONE_SET_GEOMETRY");
-        console.log(commands);
-        await this.comms.Query(commands, (str)=>str.includes("Recv: DONE_SET_GEOMETRY"));
+        await this.comms.Execute(this.geometryElementParsers.map(element => element.GetCommand(geometry)));
+        await this.Init();
         const result = await this.GetGeometry();
         this.IsBusy(false);
         return result;
@@ -79,22 +96,28 @@ class DuCalMachine
         this.IsBusy(true);
 
         const commands = [
-            `G0 Z5`, // safe height
-            `G0 X${x} Y${y}`, // position
-            `G30`, // probe
-            `M118 DONE_PROBING` // signal were done
+            `${this.commands.Move} Z5`, // safe height
+            `${this.commands.Move} X${x} Y${y}`, // position
+            `${this.commands.ProbeBed}` // probe
         ];
 
-        var response = await this.comms.Query(commands, str => str.includes("Recv: DONE_PROBING"));
+        const response = await this.comms.Execute(commands);
 
         const probePointRegex = /Bed X: (-?\d+\.?\d*) Y: (-?\d+\.?\d*) Z: (-?\d+\.?\d*)/;
         var match;
-
-        this.IsBusy(false);
+        var result = undefined;
 
         for (var i = 0; i < response.length; i++)
+        {
             if (match = probePointRegex.exec(response[i]))
-                return [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+            {
+                result = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+                break;
+            }
+        }
+
+        this.IsBusy(false);
+        return result;
 
     }
 }
@@ -150,10 +173,18 @@ class GeometryElementParser {
 }
 
 class AsyncRequestor {
-    constructor(sendRequestFunction) {
+    constructor(sendRequestFunction, cmdEcho) {
         this.requestQueue = [];
         this.currentRequest = null;
         this.sendRequestFunction = sendRequestFunction;
+        this.lastRequestId = 0;
+        this.cmdEcho = cmdEcho
+    }
+
+    Execute(query)
+    {
+        const doneString = `DONE_${this.lastRequestId++}`;
+        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(), (str) => str.includes(`Recv: ${doneString}`));
     }
 
     Query(query, isFinished, timeout) {
@@ -214,7 +245,7 @@ class AsyncRequestor {
         // are we still waiting on our request?
         if (self.currentRequest === request) 
             if(request.responseWatermark == request.response.length)
-                self.sendRequestFunction("M118");
+                self.sendRequestFunction(`${self.cmdEcho} PING`);
                 else request.responseWatermark = request.response.length;
     }
 
