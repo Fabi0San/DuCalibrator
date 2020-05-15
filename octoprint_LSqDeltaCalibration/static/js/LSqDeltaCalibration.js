@@ -297,7 +297,8 @@ class LsqDeltaCalibrationViewModel {
         for(const point of points)
         {
             const probe = await this.machine().ProbeBed(point[0],point[1]);
-            this.logProbePoint(probe[0], probe[1], probe[2]);
+            if(probe)
+                this.logProbePoint(probe[0], probe[1], probe[2]);
         }
         this.onProbingFinished();
         return;

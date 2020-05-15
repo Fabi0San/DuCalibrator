@@ -21,17 +21,9 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
     def get_settings_defaults(self):
         return dict(
             # put your plugin's default settings here
-            cmdFetchSettings="M503",
-            cmdSaveSettings="M500",
-            cmdStepsPerUnit="M92",
-            idsStepsPerUnit="XYZ",
-            cmdEndStopOffset="M666",
-            idsEndStopOffset="XYZ",         
-            cmdDeltaConfig="M665",
-            idsRadiusHeightRod="RHL",
-            idsTowerAngleOffset="XYZ",
-            idsRadiusOffset="ABC",
-            idsRodLenOffset="IJK",
+            Firmware="Marlin",
+            InitCommands="G28|M204 T200|G0 F12000",
+            SafeHeight="5"
         )
    
     ##~~ AssetPlugin mixin

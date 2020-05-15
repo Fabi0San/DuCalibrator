@@ -18,7 +18,9 @@ class DuCalMachine
     {
         this.geometryElementParsers = [
             new GeometryElementParser(this.commands.StepsPerUnit, this.commands.idsStepsPerUnit, (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
-            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value, (geometry) => geometry.EndStopOffset),
+            
+            // endstop offset is added to the height, marlin reverses this for some reason.
+            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>-i), (geometry) => geometry.EndStopOffset.map(i=>-i)),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
@@ -30,7 +32,7 @@ class DuCalMachine
     {
         this.commands = 
         {
-            Init: ["G28","M204 T200", "G0 F12000"],
+            Init: this.settings.InitCommands().split("|"),
             Echo: "M118",
             Move: "G0",
             ProbeBed: "G30",
@@ -43,8 +45,6 @@ class DuCalMachine
             idsTowerAngleOffset: "XYZ",
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
-            //idsRadiusOffset="ABC",
-            //idsRodLenOffset="IJK",
         }
     }
 
@@ -96,8 +96,8 @@ class DuCalMachine
         this.IsBusy(true);
 
         const commands = [
-            `${this.commands.Move} Z5`, // safe height
-            `${this.commands.Move} X${x} Y${y}`, // position
+            `${this.commands.Move} Z${this.settings.SafeHeight()}`, // safe height
+            `${this.commands.Move} X${x.toFixed(5)} Y${y.toFixed(5)}`, // position
             `${this.commands.ProbeBed}` // probe
         ];
 
@@ -184,7 +184,7 @@ class AsyncRequestor {
     Execute(query)
     {
         const doneString = `DONE_${this.lastRequestId++}`;
-        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(), (str) => str.includes(`Recv: ${doneString}`));
+        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(Infinity), (str) => str.includes(`Recv: ${doneString}`));
     }
 
     Query(query, isFinished, timeout) {
@@ -222,7 +222,7 @@ class AsyncRequestor {
         this.sendRequestFunction(request.query);
         if (request.timeout)
             request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request, this);
-        request.watchdogHandle = setInterval(this.Watchdog, 3000, request, this);
+        request.watchdogHandle = setInterval(this.Watchdog, 1000, request, this);
     }
 
     EndRequest() {
