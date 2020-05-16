@@ -22,7 +22,7 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
         return dict(
             # put your plugin's default settings here
             Firmware="Marlin",
-            InitCommands="G28|M204 T200|G0 F12000",
+            InitCommands="G28 ;home\nM204 T200 ;accel\nG0 F12000 ;speed",
             SafeHeight="5"
         )
    

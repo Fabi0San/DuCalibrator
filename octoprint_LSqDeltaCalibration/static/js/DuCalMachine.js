@@ -32,7 +32,7 @@ class DuCalMachine
     {
         this.commands = 
         {
-            Init: this.settings.InitCommands().split("|"),
+            Init: this.settings.InitCommands().split("\n"),
             Echo: "M118",
             Move: "G0",
             ProbeBed: "G30",
