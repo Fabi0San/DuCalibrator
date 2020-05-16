@@ -2,19 +2,24 @@
     <div class="control-group">
         <label class="control-label">{{ _('Firmware') }}</label>
         <div class="controls">
-            <input type="text" class="input-small" data-bind="value: settings.Firmware">
+            <select class="form-control" data-bind="value: settings.Firmware">
+                <option>Marlin</option>
+                <option>Test</option>
+
+            </select>
+            <!--input type="text" class="input-small" data-bind="value: settings.Firmware"-->
         </div>
     </div>
     <div class="control-group">
         <label class="control-label">{{ _('Init Commands') }}</label>
         <div class="controls">
-            <input type="text" class="input-small" data-bind="value: settings.InitCommands">
+            <textarea class="form-control" rows=5 data-bind="value: settings.InitCommands"> </textarea>
         </div>
     </div>
     <div class="control-group">
         <label class="control-label">{{ _('Safe Height mm') }}</label>
         <div class="controls">
-            <input type="text" class="input-small" data-bind="value: settings.SafeHeight">
+            <input type="number" class="input-small" data-bind="value: settings.SafeHeight">
         </div>
     </div>
 </form>

@@ -25,8 +25,7 @@ class LsqDeltaCalibrationViewModel {
 
         // UI control
         this.isGeometryKnown = () => this.machine().Geometry() != undefined;
-        this.isReadyForCommands = ()=> this.machine().IsReady() && !this.machine().IsBusy();  //function () { return (this.isSimulation() || this.isPrinterReady()) && !this.isProbing && !this.isFetchingGeometry; };
-        this.isPrinterReady = ko.observable(false);
+        this.isReadyForCommands = ()=> this.machine().IsReady() && !this.machine().IsBusy();
         this.isFetchingGeometry = false;
         this.isProbing = false;
         this.isReadyToCalibrate = ko.observable(false);
@@ -317,11 +316,6 @@ class LsqDeltaCalibrationViewModel {
             this.onProbingFinished();
             return;
         }*/
-
-        if (this.isPrinterReady())
-            OctoPrint.control.sendGcode(`G29.1 P1 I${this.probePointCount()} J${this.probeRadius()}`, null);
-        else this.parseResponse(this.simulatedG29);
-
     }
 
     async fetchGeometry() {
