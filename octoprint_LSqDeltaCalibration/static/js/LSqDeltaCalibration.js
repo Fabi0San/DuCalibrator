@@ -26,8 +26,12 @@ class LsqDeltaCalibrationViewModel {
         // UI control
         this.isGeometryKnown = () => this.machine().Geometry() != undefined;
         this.isReadyForCommands = ()=> this.machine().IsReady() && !this.machine().IsBusy();
-        this.isFetchingGeometry = false;
-        this.isProbing = false;
+        
+        this.isFetchingGeometry = ko.observable(false);
+        this.isProbing = ko.observable(false);
+        this.isCalibrating = ko.observable(false);
+        this.probingProgressString = ko.observable("0");
+        
         this.isReadyToCalibrate = ko.observable(false);
 
         this.plotDivElement = $("#surfacePlotDiv")[0];
@@ -107,7 +111,8 @@ class LsqDeltaCalibrationViewModel {
         this.GeometryControl.Hide();
     }
 
-    onProbingFinished() {
+    onProbingFinished() 
+    {
         this.probedGeometries.unshift({
             Name: "Trial #" + this.trialNumber++,
             Timestamp: new Date().toLocaleString(),
@@ -119,6 +124,7 @@ class LsqDeltaCalibrationViewModel {
         this.computeCorrections();
         this.GeometryControl.Hide();
         this.CalibrationControl.Show();
+        this.isProbing(false);
     }
 
     // helpers
@@ -169,7 +175,8 @@ class LsqDeltaCalibrationViewModel {
     }
 
     // 3d visualization
-    preparePlot(surfacePlotDiv, bedRadius, probeCount) {
+    preparePlot(surfacePlotDiv, bedRadius, probeCount) 
+    {
         var scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
         //scene.fog = new THREE.FogExp2(0xffffff, 0.002);
@@ -231,7 +238,8 @@ class LsqDeltaCalibrationViewModel {
         this.plot.geometry.attributes.position.needsUpdate = true;
     }
 
-    adjustZScale(zScaleInfo, z) {
+    adjustZScale(zScaleInfo, z) 
+    {
         if ((zScaleInfo.maxZ === undefined) || (z > zScaleInfo.maxZ))
             zScaleInfo.maxZ = z;
         if ((zScaleInfo.minZ === undefined) || (z < zScaleInfo.minZ))
@@ -247,31 +255,31 @@ class LsqDeltaCalibrationViewModel {
         return newScale / oldScale;
     }
 
-    SendGeometryToMachine(geometry) {
-        // TODO: use async and handle errors.
-        OctoPrint.control.sendGcode(this.geometryElementParsers.map(element => element.GetCommand(geometry)), null);
-    }
-
     // ui commands
-    configureGeometry() {
-        this.ConfigureGeometry(this.newGeometry());
+    async configureGeometry() {
+        await this.ConfigureGeometry(this.newGeometry());
     }
 
-    async ConfigureGeometry(geometry) {
+    cancelProbing()
+    {
+        this.cancelProbingRequested = true;
+    }
+
+    async ConfigureGeometry(geometry) 
+    {
+        this.isCalibrating(true);
         await this.machine().SetGeometry(geometry);
         this.GeometryControl.Show();
         this.resetProbeData();
         this.resetCalibrationData();
         this.PlotControl.Hide();
+        this.isCalibrating(false);
     }
 
-    async probeBed() {
-
-        //console.log( await this.machine().ProbeBed(10, 10));
-
-        //return;
-
-        this.isProbing = true;
+    async probeBed() 
+    {
+        this.cancelProbingRequested = false;
+        this.isProbing(true);
         this.resetProbeData();
 
         // fetching the actual printer radius so the plot look to scale
@@ -284,7 +292,6 @@ class LsqDeltaCalibrationViewModel {
             normalizeTo: radius / 3
         };
 
-
         this.plot = this.preparePlot(
             this.plotDivElement,
             radius,
@@ -295,9 +302,21 @@ class LsqDeltaCalibrationViewModel {
         var points = SpiralPoints(this.probePointCount(), this.probeRadius());
         for(const point of points)
         {
+            if(this.cancelProbingRequested)
+            {
+                this.resetProbeData();
+                this.resetCalibrationData();
+                this.PlotControl.Hide();
+                this.isProbing(false);
+                this.cancelProbingRequested=false;
+                return;
+            }
+
             const probe = await this.machine().ProbeBed(point[0],point[1]);
             if(probe)
                 this.logProbePoint(probe[0], probe[1], probe[2]);
+            
+            this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
         }
         this.onProbingFinished();
         return;
@@ -319,15 +338,15 @@ class LsqDeltaCalibrationViewModel {
     }
 
     async fetchGeometry() {
+        this.isFetchingGeometry(true);
         this.resetProbeData();
-        this.isFetchingGeometry = true;
         var newGeometry = await this.machine().GetGeometry();
 
         // this.currentGeometry(newGeometry);
-        this.isFetchingGeometry = false;
         this.resetCalibrationData();
         this.GeometryControl.Show();
         this.PlotControl.Hide();
+        this.isFetchingGeometry(false);
     }
 
     LoadGeometry(data) {

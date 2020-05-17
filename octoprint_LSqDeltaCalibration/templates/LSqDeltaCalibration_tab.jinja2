@@ -48,9 +48,9 @@
       </div>
 
       <h4>
-        <a href="#collapseGeometry" id="collapseGeometryControl" data-toggle="collapse" class="collapsed" data-bind="visible: machine().Geometry()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isFetchingGeometry()"></i><a href="#collapseGeometry" id="collapseGeometryControl" data-toggle="collapse" class="collapsed" data-bind="visible: machine().Geometry()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Current Geometry') }}
-        <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry, enable: isReadyForCommands()" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}<i class="fa fa-cog fa-lg fa-spin" data-bind="visible: !isReadyForCommands()"></i></button>
+        <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry, enable: isReadyForCommands()" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
       </h4>
       <div class="row-fluid collapse" data-bind="" id="collapseGeometry">
         <div class="row-fluid">
@@ -122,17 +122,36 @@
       </script>
       
       <h4>
-        <a href="#collapsePlot" id="collapsePlotControl"  data-toggle="collapse" class="collapsed" data-bind="visible: ProbedData().RMS"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isProbing()"></i><a href="#collapsePlot" id="collapsePlotControl"  data-toggle="collapse" class="collapsed" data-bind="visible: ProbedData().RMS"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
         {{ _('Probing') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:ProbedData().RMS , data: ProbedData }"></span>
-        <button class="btn btn-primary pull-right" data-bind="click: probeBed, enable: isReadyForCommands() && isGeometryKnown()">{{ _('Probe bed') }}</button>
+        <button class="btn btn-primary pull-right" data-bind="click: probeBed, visible: !isProbing(), enable: isReadyForCommands() && isGeometryKnown()">{{ _('Probe bed') }}</button>
+        <button class="btn btn-danger pull-right" data-bind="click: cancelProbing, visible: isProbing()"><i class="fa fa-stop"></i> {{ _('Cancel') }}</button>
       </h4>
       <div class="row-fluid collapse" id="collapsePlot">
+
+        <div class="progress progress-text-centered" style="position: relative;">
+          <span class="progress-text-back" data-bind="text: probingProgressString() + '%'"></span>
+          <div class="bar" id="duc_progressBar" data-bind="style: {width: probingProgressString() + '%'}" style="width: 0%;">
+              <span class="progress-text-front" data-bind="copyWidth: ':parent :parent', text: probingProgressString() + '%'" style="width: 268px;"></span>
+          </div>
+          <div dir="ltr" class="resize-sensor" style="position: absolute; left: -10px; top: -10px; right: 0px; bottom: 0px; overflow: hidden; z-index: -1; visibility: hidden;">
+            <div class="resize-sensor-expand" style="position: absolute; left: -10px; top: -10px; right: 0; bottom: 0; overflow: hidden; z-index: -1; visibility: hidden;">
+              <div style="position: absolute; left: 0px; top: 0px; transition: all 0s ease 0s; width: 100000px; height: 100000px;">
+              </div>
+            </div>
+            <div class="resize-sensor-shrink" style="position: absolute; left: -10px; top: -10px; right: 0; bottom: 0; overflow: hidden; z-index: -1; visibility: hidden;">
+              <div style="position: absolute; left: 0; top: 0; transition: 0s; width: 200%; height: 200%">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="row-fluid" id="surfacePlotDiv" style="width: 100%; height: 400px;"></div>
       </div>
 
       <div class="row-fluid">
         <h4>
-          <a href="#collapseCalibration" id="collapseCalibrationControl"  data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+          <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isCalibrating()"></i><a href="#collapseCalibration" id="collapseCalibrationControl"  data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
           {{ _('Calibration') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:CalibratedData , data: CalibratedData }"></span>
           <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Calibrate') }}</button>
         </h4>
