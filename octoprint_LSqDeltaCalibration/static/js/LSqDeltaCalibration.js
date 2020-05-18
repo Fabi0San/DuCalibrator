@@ -105,13 +105,16 @@ class LsqDeltaCalibrationViewModel {
     ReloadSettings()
     {
         this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
-        switch(this.settings.Firmware)
+        switch(this.settings.Firmware())
         {
             case "Marlin":
-                this.machine(new DuCalMachine(this.settings));
+                this.machine(new MarlinMachine(this.settings));
+                break;
+            case "Smoothie":
+                this.machine(new SmoothieMachine(this.settings));
                 break;
             case "Test":
-                this.machine(new DuCalMachine(this.settings));
+                this.machine(new TestMachine(this.settings));
                 break;
         }
         

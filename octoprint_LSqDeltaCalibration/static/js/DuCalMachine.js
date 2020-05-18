@@ -1,53 +1,47 @@
 // Class abstracting the machine being calibrated
-class DuCalMachine 
+class AbstractMachine 
 {
     constructor(settings)
     {
         this.settings = settings;
-        this.PopulateCommands();
-        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req), this.commands.Echo);
 
         this.IsReady = ko.observable(false);
         this.IsBusy = ko.observable(false);
         this.Geometry = ko.observable(undefined);
         
+    }
+
+    ParseData(data)
+    {
+    }
+
+    async Init()
+    {
+    }
+
+    async GetGeometry()
+    {        
+    }
+
+    async SetGeometry(geometry)
+    {
+    }
+
+    async ProbeBed(x, y) 
+    {
+    }
+}
+
+class RealMachine extends AbstractMachine
+{
+    constructor(settings)
+    {
+        super(settings);
+        this.PopulateCommands();
+        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req), this.commands.Echo);
         this.BuildGeometryParsers();
-    }
-
-    BuildGeometryParsers()
-    {
-        this.geometryElementParsers = [
-            new GeometryElementParser(this.commands.StepsPerUnit, this.commands.idsStepsPerUnit, (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
-            
-            // endstop offset is added to the height, marlin reverses this for some reason.
-            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>-i), (geometry) => geometry.EndStopOffset.map(i=>-i)),
-            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
-            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
-            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
-            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
-        ];
-    }
-
-    PopulateCommands()
-    {
-        this.commands = 
-        {
-            Init: this.settings.InitCommands().split("\n"),
-            Echo: "M118",
-            Move: "G0",
-            ProbeBed: "G30",
-            FetchSettings: "M503",
-            SaveSettings: "M500",
-            StepsPerUnit: "M92",
-            EndStopOffset: "M666",
-            DeltaConfig: "M665",
-            idsRadiusHeightRod: "RHL",
-            idsTowerAngleOffset: "XYZ",
-            idsEndStopOffset: "XYZ",         
-            idsStepsPerUnit: "XYZ",
-        }
-    }
-
+    } 
+    
     ParseData(data)
     {
         this.comms.ReceiveResponse(data.logs);
@@ -90,6 +84,48 @@ class DuCalMachine
         this.IsBusy(false);
         return result;
     }
+}
+
+class MarlinMachine extends RealMachine
+{
+    constructor(settings)
+    {
+        super(settings);
+    } 
+
+    BuildGeometryParsers()
+    {
+        this.geometryElementParsers = [
+            new GeometryElementParser(this.commands.StepsPerUnit, this.commands.idsStepsPerUnit, (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
+            
+            // endstop offset is added to the height, marlin reverses this for some reason.
+            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>-i), (geometry) => geometry.EndStopOffset.map(i=>-i)),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
+        ];
+    }
+
+    PopulateCommands()
+    {
+        this.commands = 
+        {
+            Init: this.settings.InitCommands().split("\n"),
+            Echo: "M118",
+            Move: "G0",
+            ProbeBed: "G30",
+            FetchSettings: "M503",
+            SaveSettings: "M500",
+            StepsPerUnit: "M92",
+            EndStopOffset: "M666",
+            DeltaConfig: "M665",
+            idsRadiusHeightRod: "RHL",
+            idsTowerAngleOffset: "XYZ",
+            idsEndStopOffset: "XYZ",         
+            idsStepsPerUnit: "XYZ",
+        }
+    }
 
     async ProbeBed(x, y) 
     {
@@ -118,9 +154,92 @@ class DuCalMachine
 
         this.IsBusy(false);
         return result;
-
     }
 }
+
+class SmoothieMachine extends RealMachine
+{
+    constructor(settings)
+    {
+        super(settings);
+    } 
+
+    BuildGeometryParsers()
+    {
+        this.geometryElementParsers = [
+            new GeometryElementParser(this.commands.StepsPerUnit, this.commands.idsStepsPerUnit, (geometry, value) => geometry.StepsPerUnit = value, (geometry) => geometry.StepsPerUnit),
+            new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>i), (geometry) => geometry.EndStopOffset.map(i=>i)),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusOffset, (geometry, value) => geometry.RadiusAdjust = value, (geometry) => geometry.RadiusAdjust),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
+        ];
+    }
+
+    PopulateCommands()
+    {
+        this.commands = 
+        {
+            Init: this.settings.InitCommands().split("\n"),
+            Echo: "M118",
+            Move: "G0",
+            ProbeBed: "G30",
+            FetchSettings: "M503",
+            SaveSettings: "M500",
+            StepsPerUnit: "M92",
+            EndStopOffset: "M666",
+            DeltaConfig: "M665",
+            idsRadiusHeightRod: "RZL",
+            idsTowerAngleOffset: "DEH",
+            idsEndStopOffset: "XYZ",         
+            idsStepsPerUnit: "XYZ",
+            idsRadiusOffset: "ABC"
+        }
+    }
+
+    async ProbeBed(x, y) 
+    {
+        this.IsBusy(true);
+
+        const commands = [
+            `${this.commands.Move} Z${this.settings.SafeHeight()}`, // safe height
+            `${this.commands.Move} X${x.toFixed(5)} Y${y.toFixed(5)}`, // position
+            `${this.commands.ProbeBed}` // probe
+        ];
+
+        const response = await this.comms.Execute(commands);
+
+        const probePointRegex = /Bed X: (-?\d+\.?\d*) Y: (-?\d+\.?\d*) Z: (-?\d+\.?\d*)/;
+        var match;
+        var result = undefined;
+
+        for (var i = 0; i < response.length; i++)
+        {
+            if (match = probePointRegex.exec(response[i]))
+            {
+                result = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+                break;
+            }
+        }
+
+        this.IsBusy(false);
+        return result;
+    }
+
+}
+
+class TestMachine extends AbstractMachine
+{
+    constructor(settings, actualGeometry, currentGeometry)
+    {
+        super(settings);
+        this.actualGeometry = actualGeometry;
+        this.Geometry
+    } 
+}
+
+
 
 class GeometryElementParser {
     constructor(command, element, setFunction, getFunction) {
