@@ -80,7 +80,6 @@ class LsqDeltaCalibrationViewModel {
           "Recv: ok"];
          */
 
-        this.ar = new AsyncRequestor(req => OctoPrint.control.sendGcode(req));
         this.machine = new ko.observable(undefined);        
     }
 
@@ -106,25 +105,18 @@ class LsqDeltaCalibrationViewModel {
     ReloadSettings()
     {
         this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
-        this.machine(new DuCalMachine(this.settings));
+        switch(this.settings.Firmware)
+        {
+            case "Marlin":
+                this.machine(new DuCalMachine(this.settings));
+                break;
+            case "Test":
+                this.machine(new DuCalMachine(this.settings));
+                break;
+        }
+        
         this.machine().ParseData(this.latestData);
         this.GeometryControl.Hide();
-    }
-
-    onProbingFinished() 
-    {
-        this.probedGeometries.unshift({
-            Name: "Trial #" + this.trialNumber++,
-            Timestamp: new Date().toLocaleString(),
-            RMS: this.ProbedData.peek().RMS.toFixed(3),
-            Geometry: this.currentGeometry().Clone()
-        });
-
-        this.isReadyToCalibrate(true);
-        this.computeCorrections();
-        this.GeometryControl.Hide();
-        this.CalibrationControl.Show();
-        this.isProbing(false);
     }
 
     // helpers
@@ -318,8 +310,19 @@ class LsqDeltaCalibrationViewModel {
             
             this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
         }
-        this.onProbingFinished();
-        return;
+
+        this.probedGeometries.unshift({
+            Name: "Trial #" + this.trialNumber++,
+            Timestamp: new Date().toLocaleString(),
+            RMS: this.ProbedData.peek().RMS.toFixed(3),
+            Geometry: this.currentGeometry().Clone()
+        });
+
+        this.isReadyToCalibrate(true);
+        this.computeCorrections();
+        this.GeometryControl.Hide();
+        this.CalibrationControl.Show();
+        this.isProbing(false);
 
         /*
         if (this.isTest()) {
