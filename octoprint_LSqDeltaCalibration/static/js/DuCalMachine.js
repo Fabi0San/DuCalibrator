@@ -231,12 +231,39 @@ class SmoothieMachine extends RealMachine
 
 class TestMachine extends AbstractMachine
 {
-    constructor(settings, actualGeometry, currentGeometry)
+    constructor(settings, actualGeometry, initialGeometry)
     {
         super(settings);
         this.actualGeometry = actualGeometry;
-        this.Geometry
+        this.initialGeometry = initialGeometry;
+        this.IsReady(true);
     } 
+
+    async Init()
+    {
+        this.Geometry(this.initialGeometry);
+    }
+
+    async GetGeometry()
+    {
+        if(!this.Geometry())
+        {
+            await this.Init();
+        }
+        
+        return this.Geometry();
+    }
+
+    async SetGeometry(geometry)
+    {
+        this.Geometry(geometry);
+    }
+
+    async ProbeBed(x,y)
+    {
+        const newPoint = this.actualGeometry.GetEffectorPosition(this.Geometry().GetCarriagePosition([x, y, 0]));
+        return [newPoint[0], newPoint[1], newPoint[2]];
+    }
 }
 
 

@@ -114,8 +114,13 @@ class LsqDeltaCalibrationViewModel {
                 this.machine(new SmoothieMachine(this.settings));
                 break;
             case "Test":
-                this.machine(new TestMachine(this.settings));
-                break;
+                {
+                    const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [1,0,0], [400,400,400]);
+
+                    this.machine(new TestMachine(this.settings, testGeo, initialGeo));
+                    break;
+                }
         }
         
         this.machine().ParseData(this.latestData);
