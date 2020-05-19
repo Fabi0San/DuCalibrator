@@ -175,7 +175,7 @@ class DeltaGeometry
     }
 
     GetCarriagePosition(position) {
-        return AllTowers.map(tower => Math.round // rounded to constrain to machine's adressable positions
+        return AllTowers.map(tower => //Math.round // rounded to constrain to machine's adressable positions
             (this.TowerHeightSteps[tower] -
             (this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower]))); // fromBottom
     }

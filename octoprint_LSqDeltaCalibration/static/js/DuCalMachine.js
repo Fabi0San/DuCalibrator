@@ -250,7 +250,7 @@ class TestMachine extends AbstractMachine
         {
             await this.Init();
         }
-        
+
         return this.Geometry();
     }
 
@@ -262,7 +262,7 @@ class TestMachine extends AbstractMachine
     async ProbeBed(x,y)
     {
         const newPoint = this.actualGeometry.GetEffectorPosition(this.Geometry().GetCarriagePosition([x, y, 0]));
-        return [newPoint[0], newPoint[1], newPoint[2]];
+        return [newPoint[0], newPoint[1], -newPoint[2]];
     }
 }
 
