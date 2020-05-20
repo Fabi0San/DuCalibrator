@@ -265,7 +265,6 @@ class TestMachine extends AbstractMachine
         var targetZ = 0;
         var carriagePositions;
         var actualPosition;
-        debugger;
 
         // search a point on the current geometry that hit z0 on the actual geomety.
         do
