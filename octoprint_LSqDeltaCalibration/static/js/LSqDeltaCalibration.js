@@ -21,7 +21,7 @@ class LsqDeltaCalibrationViewModel {
         this.isSimulation = ko.observable(true);
         this.isTest = ko.observable(true);
         this.probeRadius = ko.observable(this.printerProfilesViewModel.currentProfileData().volume.width() / 2);
-        this.probePointCount = ko.observable(15);
+        this.probePointCount = ko.observable(50);
 
         // UI control
         this.isGeometryKnown = () => this.machine().Geometry() != undefined;
@@ -116,7 +116,7 @@ class LsqDeltaCalibrationViewModel {
             case "Test":
                 {
                     const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(330, 175, 301, [0,0,0], [0,0,0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(330, 165, 301, [0,0,0], [0,0,0], [400,400,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -331,21 +331,6 @@ class LsqDeltaCalibrationViewModel {
         this.GeometryControl.Hide();
         this.CalibrationControl.Show();
         this.isProbing(false);
-
-        /*
-        if (this.isTest()) {
-            var points = SpiralPoints(this.probePointCount(), this.probeRadius());
-            var geo = this.currentGeometry().Clone();
-            var positions = points.map((point) => geo.GetCarriagePosition([point[0], point[1], 0]));
-            //geo.DiagonalRod += 1;
-            //geo.Radius += 1;
-            //geo.TowerOffset[1] += 1;
-            geo = geo.Clone();
-            var newPoints = positions.map((pos) => geo.GetEffectorPosition([(pos[0]), (pos[1]), (pos[2])]));
-            newPoints.map(point => (this.logProbePoint(point[0], point[1], point[2])));
-            this.onProbingFinished();
-            return;
-        }*/
     }
 
     async fetchGeometry() {

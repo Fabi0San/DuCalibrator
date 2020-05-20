@@ -261,8 +261,24 @@ class TestMachine extends AbstractMachine
 
     async ProbeBed(x,y)
     {
-        const newPoint = this.actualGeometry.GetEffectorPosition(this.Geometry().GetCarriagePosition([x, y, 0]));
-        return [newPoint[0], newPoint[1], -newPoint[2]];
+        const almostZero = 1e-10;
+        var targetZ = 0;
+        var carriagePositions;
+        var actualPosition;
+        debugger;
+
+        // search a point on the current geometry that hit z0 on the actual geomety.
+        do
+        {
+            targetZ -= actualPosition?.[ZAxis] ?? 0;
+            carriagePositions = this.Geometry().GetCarriagePosition([x, y, targetZ]);
+            actualPosition = this.actualGeometry.GetEffectorPosition(carriagePositions);
+        } while (Math.abs(actualPosition[ZAxis]) > almostZero);
+
+        // round it UP from assumed trigger point, tor nearest addressable point.
+        carriagePositions = carriagePositions.map(p=>Math.ceil(p));
+        
+        return  this.Geometry().GetEffectorPosition(carriagePositions);
     }
 }
 
