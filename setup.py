@@ -18,7 +18,7 @@ plugin_version = "1.0.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """An OctoPrint Plugning for performing Least Squares Delta Calibration in linear delta machines."""
+plugin_description = """An OctoPrint Plugin for performing micro calibration in linear delta machines."""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "Fabio Santos"

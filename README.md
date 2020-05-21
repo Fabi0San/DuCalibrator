@@ -1,6 +1,8 @@
 # Delta Micro Calibrator
 
-**TODO:** Describe what your plugin does.
+An OctoPrint Plugin for performing micro calibration in linear delta machines.
+It calibrates up to 16 geometry parameters using least squares regression algorithm.
+It currently only supports Marlin firmware, other firmwares can be added with some community help.
 
 ## Setup
 
