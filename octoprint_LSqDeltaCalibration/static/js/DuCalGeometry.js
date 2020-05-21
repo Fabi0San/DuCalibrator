@@ -151,14 +151,6 @@ class DeltaGeometry
         return (zHi - zLo) / (2 * perturb);
     }
 
-    // Make all emndstop corrections positive and as small as possible
-    NormaliseEndstopAdjustments()
-    {
-        var eav = Math.min.apply(null, this.EndStopOffset);
-        this.EndStopOffset = this.EndStopOffset.map(v => v - eav);
-        return eav;
-    }
-
     Adjust(factors, corrections)
     {
         var i = 0;
@@ -182,7 +174,10 @@ class DeltaGeometry
 
         this.RecomputeGeometry();
 
-        this.Height += this.NormaliseEndstopAdjustments();
+        this.Height += DuCalUtils.Normalize(this.EndStopOffset);
+        this.DiagonalRod += DuCalUtils.Normalize(this.DiagonalRodAdjust);
+        this.Radius += DuCalUtils.Normalize(this.RadiusAdjust);
+        DuCalUtils.Normalize(this.TowerOffset);
         this.EndStopOffsetSteps = this.EndStopOffset.map((offset, tower) => offset * this.StepsPerUnit[tower]);
         this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
 
