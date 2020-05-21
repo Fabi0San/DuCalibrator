@@ -1,4 +1,4 @@
-# OctoPrint-DuCalibrator
+# Delta Micro Calibrator
 
 **TODO:** Describe what your plugin does.
 

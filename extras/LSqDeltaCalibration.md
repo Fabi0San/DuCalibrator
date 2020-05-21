@@ -2,8 +2,8 @@
 layout: plugin
 
 id: DuCalibrator
-title: OctoPrint-DuCalibrator
-description: An OctoPrint Plugning for performing Least Squares Delta Calibration in linear delta machines.
+title: Delta Micro Calibrator
+description: An OctoPrint Plugning for performing micro calibration in linear delta machines.
 author: Fabio Santos
 license: AGPLv3
 

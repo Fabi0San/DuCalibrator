@@ -1,5 +1,5 @@
 /*
- * View model for OctoPrint-DuCalibrator
+ * View model for Delta Micro Calibrator
  *
  * Author: Fabio Santos
  * License: AGPLv3
