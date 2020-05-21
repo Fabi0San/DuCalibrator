@@ -154,7 +154,7 @@ class LsqDeltaCalibrationViewModel {
             this.calibrate.RodLenghtAdjust() && !this.calibrate.RodLength(),
       /*this.calibrate.MaxHeight()*/];
 
-        var result = DoDeltaCalibration(this.currentGeometry().Clone(), this.ProbedData(), factors);
+        var result = DeltaGeometry.Calibrate(this.currentGeometry().Clone(), this.ProbedData(), factors);
         this.CalibratedData(result);
         this.newGeometry(result.Geometry);
 
@@ -286,7 +286,7 @@ class LsqDeltaCalibrationViewModel {
 
         this.PlotControl.Show();
 
-        var points = SpiralPoints(this.probePointCount(), this.probeRadius());
+        var points = DuCalUtils.GetSpiralPoints(this.probePointCount(), this.probeRadius());
         for(const point of points)
         {
             if(this.cancelProbingRequested)

@@ -187,121 +187,122 @@ class DeltaGeometry
         this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
 
         this.RecomputeGeometry();
-    }
-}
-
-function DoDeltaCalibration(currentGeometry, probeData, factors) 
-{
-    var debug = false;
-    var numFactors = 0;
-    for (var i = 0; i < MaxFactors; i++)
-        if (factors[i])
-            numFactors++;
-
-    var numPoints = probeData.DataPoints.length;
-
-    if (numFactors > numPoints) {
-        throw "Error: need at least as many points as factors you want to calibrate";
-    }
-
-    // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
-    var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition([point.X, point.Y, point.Z]));
-    var corrections = new Array(numPoints).fill(0.0);
-    var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += Math.pow(val.Error, 2), 0.0);
     
-    // Do 1 or more Newton-Raphson iterations
-    var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
-    var previousRms = initialRms;
-    var expectedRmsError;
-    var bestRmsError = initialRms;
-    var bestGeometry = currentGeometry.Clone();
-    var bestResiduals = probeData;
-    for (var iteration = 0; iteration<20; iteration++) {
-        // Build a matrix of derivatives.
-        var derivativeMatrix = new Matrix(numPoints, numFactors);
-        for (var i = 0; i < numPoints; ++i) {
-            var j = 0;
-            for (var k = 0; k < MaxFactors; k++) {
-                if (factors[k]) {
-                    derivativeMatrix.data[i][j++] =
-                        currentGeometry.ComputeDerivative(k, probedCarriagePositions[i]);
+    }
+    
+    static Calibrate(currentGeometry, probeData, factors) 
+    {
+        var debug = false;
+        var numFactors = 0;
+        for (var i = 0; i < MaxFactors; i++)
+            if (factors[i])
+                numFactors++;
+    
+        var numPoints = probeData.DataPoints.length;
+    
+        if (numFactors > numPoints) {
+            throw "Error: need at least as many points as factors you want to calibrate";
+        }
+    
+        // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
+        var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition([point.X, point.Y, point.Z]));
+        var corrections = new Array(numPoints).fill(0.0);
+        var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += Math.pow(val.Error, 2), 0.0);
+        
+        // Do 1 or more Newton-Raphson iterations
+        var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
+        var previousRms = initialRms;
+        var expectedRmsError;
+        var bestRmsError = initialRms;
+        var bestGeometry = currentGeometry.Clone();
+        var bestResiduals = probeData;
+        for (var iteration = 0; iteration<20; iteration++) {
+            // Build a matrix of derivatives.
+            var derivativeMatrix = new Matrix(numPoints, numFactors);
+            for (var i = 0; i < numPoints; ++i) {
+                var j = 0;
+                for (var k = 0; k < MaxFactors; k++) {
+                    if (factors[k]) {
+                        derivativeMatrix.data[i][j++] =
+                            currentGeometry.ComputeDerivative(k, probedCarriagePositions[i]);
+                    }
                 }
             }
-        }
-
-        //console.log(derivativeMatrix);
-
-        // Now build the normal equations for least squares fitting
-        var normalMatrix = new Matrix(numFactors, numFactors + 1);
-        for (var i = 0; i < numFactors; ++i) {
-            for (var j = 0; j < numFactors; ++j) {
+    
+            //console.log(derivativeMatrix);
+    
+            // Now build the normal equations for least squares fitting
+            var normalMatrix = new Matrix(numFactors, numFactors + 1);
+            for (var i = 0; i < numFactors; ++i) {
+                for (var j = 0; j < numFactors; ++j) {
+                    var temp = 0; 
+                    for (var k = 0; k < numPoints; ++k) {
+                        temp += derivativeMatrix.data[k][i] * derivativeMatrix.data[k][j];
+                    }
+                    normalMatrix.data[i][j] = temp;
+                }
                 var temp = 0; 
                 for (var k = 0; k < numPoints; ++k) {
-                    temp += derivativeMatrix.data[k][i] * derivativeMatrix.data[k][j];
+                    temp += derivativeMatrix.data[k][i] * -(probeData.DataPoints[k].Error + corrections[k]);
                 }
-                normalMatrix.data[i][j] = temp;
+                normalMatrix.data[i][numFactors] = temp;
             }
-            var temp = 0; 
-            for (var k = 0; k < numPoints; ++k) {
-                temp += derivativeMatrix.data[k][i] * -(probeData.DataPoints[k].Error + corrections[k]);
-            }
-            normalMatrix.data[i][numFactors] = temp;
-        }
-
-        var solution = [];
-        normalMatrix.GaussJordan(solution, numFactors);
-        
-        for (var i = 0; i < numFactors; ++i) {
-            if (isNaN(solution[i])) {
-                throw "Unable to calculate corrections. Please make sure the bed probe points are all distinct.";
-            }
-        }
-
-        if (debug) {
-            // Calculate and display the residuals
-            var residuals = [];
-            for (var i = 0; i < numPoints; ++i) {
-                var r = probeData.DataPoints[i].Error;
-                for (var j = 0; j < numFactors; ++j) {
-                    r += solution[j] * derivativeMatrix.data[i][j];
-                }
-                residuals.push(r);
-            }
-        }
-
-        currentGeometry.Adjust(factors, solution);
-
-        // Calculate the expected probe heights using the new parameters
-        {
-            var expectedResiduals = new Array(numPoints);
-            var sumOfSquares = 0.0;
-            for (var i = 0; i < numPoints; ++i) {
-                var effector = currentGeometry.GetEffectorPosition(probedCarriagePositions[i]);
-                var correction = effector[ZAxis] - probeData.DataPoints[i].Z;
-                corrections[i] = correction;
-                expectedResiduals[i] = probeData.DataPoints[i].Error + correction;
-                sumOfSquares += Math.pow(expectedResiduals[i], 2);
-            }
-
-            expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
-            //console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
-            previousRms = expectedRmsError;
-        }
-
-        if (expectedRmsError < bestRmsError) {
-            bestRmsError = expectedRmsError;
-            bestGeometry = currentGeometry.Clone();
-            bestResiduals = expectedResiduals;
-            iteration = 0;
-        }
-    }
-    console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares / numPoints) + " after " + bestRmsError);
     
-    return {
-        Geometry: bestGeometry,
-        RMS: bestRmsError,
-        Min: Math.min.apply(null, bestResiduals),
-        Max: Math.max.apply(null, bestResiduals),
-        Residuals: bestResiduals
-    };
+            var solution = [];
+            normalMatrix.GaussJordan(solution, numFactors);
+            
+            for (var i = 0; i < numFactors; ++i) {
+                if (isNaN(solution[i])) {
+                    throw "Unable to calculate corrections. Please make sure the bed probe points are all distinct.";
+                }
+            }
+    
+            if (debug) {
+                // Calculate and display the residuals
+                var residuals = [];
+                for (var i = 0; i < numPoints; ++i) {
+                    var r = probeData.DataPoints[i].Error;
+                    for (var j = 0; j < numFactors; ++j) {
+                        r += solution[j] * derivativeMatrix.data[i][j];
+                    }
+                    residuals.push(r);
+                }
+            }
+    
+            currentGeometry.Adjust(factors, solution);
+    
+            // Calculate the expected probe heights using the new parameters
+            {
+                var expectedResiduals = new Array(numPoints);
+                var sumOfSquares = 0.0;
+                for (var i = 0; i < numPoints; ++i) {
+                    var effector = currentGeometry.GetEffectorPosition(probedCarriagePositions[i]);
+                    var correction = effector[ZAxis] - probeData.DataPoints[i].Z;
+                    corrections[i] = correction;
+                    expectedResiduals[i] = probeData.DataPoints[i].Error + correction;
+                    sumOfSquares += Math.pow(expectedResiduals[i], 2);
+                }
+    
+                expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
+                //console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
+                previousRms = expectedRmsError;
+            }
+    
+            if (expectedRmsError < bestRmsError) {
+                bestRmsError = expectedRmsError;
+                bestGeometry = currentGeometry.Clone();
+                bestResiduals = expectedResiduals;
+                iteration = 0;
+            }
+        }
+        console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares / numPoints) + " after " + bestRmsError);
+        
+        return {
+            Geometry: bestGeometry,
+            RMS: bestRmsError,
+            Min: Math.min.apply(null, bestResiduals),
+            Max: Math.max.apply(null, bestResiduals),
+            Residuals: bestResiduals
+        };
+    }
 }

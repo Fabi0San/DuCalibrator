@@ -63,21 +63,24 @@ class CollapseControl {
     }
 }
 
-function SpiralPoints(n, radius) {
-    var a = radius / (2 * Math.sqrt(n * Math.PI));
-    var step_length = radius * radius / (2 * a * n);
-
-    var result = new Array(n);
-
-    for (var i = 0; i < n; i++) {
-        var angle = Math.sqrt( 2 * (i * step_length) / a);
-        var r = angle * a;
-
-        // polar to cartesian
-        var x = r * Math.cos(angle);
-        var y = r * Math.sin(angle);
-        result[i] = [x, y];
+class DuCalUtils
+{
+    static GetSpiralPoints(n, radius) {
+        var a = radius / (2 * Math.sqrt(n * Math.PI));
+        var step_length = radius * radius / (2 * a * n);
+    
+        var result = new Array(n);
+    
+        for (var i = 0; i < n; i++) {
+            var angle = Math.sqrt( 2 * (i * step_length) / a);
+            var r = angle * a;
+    
+            // polar to cartesian
+            var x = r * Math.cos(angle);
+            var y = r * Math.sin(angle);
+            result[i] = [x, y];
+        }    
+        return result;
     }
-
-    return result;
 }
+
