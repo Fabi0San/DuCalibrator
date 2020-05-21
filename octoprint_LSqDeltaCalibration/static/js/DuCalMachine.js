@@ -281,8 +281,6 @@ class TestMachine extends AbstractMachine
     }
 }
 
-
-
 class GeometryElementParser {
     constructor(command, element, setFunction, getFunction) {
         this.command = command;

@@ -1,77 +1,7 @@
 // Delta calibration script
-
-var debug = false;
-
 const degreesToRadians = Math.PI / 180.0;
-const XAxis = 0;
-const YAxis = 1;
-const ZAxis = 2;
-const AlphaTower = 0;
-const BetaTower = 1;
-const GammaTower = 2;
 const MaxFactors = 16;
 const AllTowers = [AlphaTower, BetaTower, GammaTower];
-
-
-function fsquare(x) {
-    return x * x;
-}
-
-class ProbingData{
-    constructor(observable = ko.observable())
-    {
-        this.DataPoints = [];
-        this.Max = undefined;
-        this.Min = undefined;
-        this.RMS = undefined;
-        this.Observable = observable;
-        this.sumOfSquares = 0;
-        this.Observable(this);
-    }
-
-    AddPoint(x, y, z, error)
-    {
-        this.DataPoints.push({ X: x, Y: y, Z: z, Error: error });
-
-        if (this.Max === undefined || error > this.Max)
-            this.Max = error;
-
-        if (this.Min === undefined || error < this.Min)
-            this.Min = error;
-
-        this.sumOfSquares += error * error;
-
-        this.RMS = Math.sqrt(this.sumOfSquares / this.DataPoints.length);
-
-        this.Observable(this);
-    }
-}
-
-class CollapseControl {
-    constructor(id) {
-        this.controlElement = $(id)[0];
-    }
-
-    IsCollapsed() {
-        return this.controlElement.classList.contains("collapsed");
-    }
-
-    Toggle() {
-        this.controlElement.click();
-    }
-
-    Hide() {
-        if (!this.IsCollapsed()) {
-            this.Toggle();
-        }
-    }
-
-    Show() {
-        if (this.IsCollapsed()) {
-            this.Toggle();
-        }
-    }
-}
 
 class Matrix
 {
@@ -182,7 +112,7 @@ class DeltaGeometry
 
     CarriagemmFromBottom(machinePos, tower)
     {
-        return machinePos[ZAxis] + Math.sqrt(fsquare(this.DiagonalRod + this.DiagonalRodAdjust[tower]) - fsquare(machinePos[XAxis] - this.towerPositions[tower][XAxis]) - fsquare(machinePos[YAxis] - this.towerPositions[tower][YAxis]));
+        return machinePos[ZAxis] + Math.sqrt(Math.pow(this.DiagonalRod + this.DiagonalRodAdjust[tower],2) - Math.pow(machinePos[XAxis] - this.towerPositions[tower][XAxis],2) - Math.pow(machinePos[YAxis] - this.towerPositions[tower][YAxis],2));
     }
 
     GetZ(carriagePositions)
@@ -260,33 +190,9 @@ class DeltaGeometry
     }
 }
 
-function DebugPrint(s) {
-    if (debug) {
-        console.log(s);
-    }
-}
-
-function SpiralPoints(n, radius) {
-    var a = radius / (2 * Math.sqrt(n * Math.PI));
-    var step_length = radius * radius / (2 * a * n);
-
-    var result = new Array(n);
-
-    for (var i = 0; i < n; i++) {
-        var angle = Math.sqrt( 2 * (i * step_length) / a);
-        var r = angle * a;
-
-        // polar to cartesian
-        var x = r * Math.cos(angle);
-        var y = r * Math.sin(angle);
-        result[i] = [x, y];
-    }
-
-    return result;
-}
-
-
-function DoDeltaCalibration(currentGeometry, probeData, factors) {
+function DoDeltaCalibration(currentGeometry, probeData, factors) 
+{
+    var debug = false;
     var numFactors = 0;
     for (var i = 0; i < MaxFactors; i++)
         if (factors[i])
@@ -301,7 +207,7 @@ function DoDeltaCalibration(currentGeometry, probeData, factors) {
     // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
     var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition([point.X, point.Y, point.Z]));
     var corrections = new Array(numPoints).fill(0.0);
-    var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += fsquare(val.Error), 0.0);
+    var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += Math.pow(val.Error, 2), 0.0);
     
     // Do 1 or more Newton-Raphson iterations
     var initialRms = Math.sqrt(initialSumOfSquares / numPoints);
@@ -323,7 +229,7 @@ function DoDeltaCalibration(currentGeometry, probeData, factors) {
             }
         }
 
-        DebugPrint(derivativeMatrix);
+        //console.log(derivativeMatrix);
 
         // Now build the normal equations for least squares fitting
         var normalMatrix = new Matrix(numFactors, numFactors + 1);
@@ -374,11 +280,11 @@ function DoDeltaCalibration(currentGeometry, probeData, factors) {
                 var correction = effector[ZAxis] - probeData.DataPoints[i].Z;
                 corrections[i] = correction;
                 expectedResiduals[i] = probeData.DataPoints[i].Error + correction;
-                sumOfSquares += fsquare(expectedResiduals[i]);
+                sumOfSquares += Math.pow(expectedResiduals[i], 2);
             }
 
             expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
-            DebugPrint("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
+            //console.log("Iteration " + iteration + " delta rms " + (expectedRmsError < previousRms ? "-" : "+") + Math.log10(Math.abs(expectedRmsError - previousRms)) + " improvement on initial " + (expectedRmsError - initialRms));
             previousRms = expectedRmsError;
         }
 
@@ -399,7 +305,3 @@ function DoDeltaCalibration(currentGeometry, probeData, factors) {
         Residuals: bestResiduals
     };
 }
-
-
-
-// End
