@@ -50,11 +50,11 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
                 # version check: github repository
                 type="github_release",
                 user="Fabi0San",
-                repo="OctoPrint-DuCalibrator",
+                repo="DuCalibrator",
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/Fabi0San/OctoPrint-DuCalibrator/archive/{target_version}.zip"
+                pip="https://github.com/Fabi0San/DuCalibrator/archive/{target_version}.zip"
             )
         )
 

@@ -10,9 +10,9 @@ license: AGPLv3
 # TODO
 date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
 
-homepage: https://github.com/Fabi0San/OctoPrint-DuCalibrator
-source: https://github.com/Fabi0San/OctoPrint-DuCalibrator
-archive: https://github.com/Fabi0San/OctoPrint-DuCalibrator/archive/master.zip
+homepage: https://github.com/Fabi0San/DuCalibrator
+source: https://github.com/Fabi0San/DuCalibrator
+archive: https://github.com/Fabi0San/DuCalibrator/archive/master.zip
 
 # TODO
 # Set this to true if your plugin uses the dependency_links setup parameter to include

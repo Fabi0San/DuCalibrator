@@ -27,7 +27,7 @@ plugin_author = "Fabio Santos"
 plugin_author_email = "fabiosan@live.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/Fabi0San/OctoPrint-DuCalibrator"
+plugin_url = "https://github.com/Fabi0San/DuCalibrator"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
