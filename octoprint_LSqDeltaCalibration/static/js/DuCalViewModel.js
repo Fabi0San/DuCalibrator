@@ -1,10 +1,10 @@
 /*
- * View model for OctoPrint-LSqDeltaCalibration
+ * View model for OctoPrint-DuCalibrator
  *
  * Author: Fabio Santos
  * License: AGPLv3
  */
-class LsqDeltaCalibrationViewModel {
+class DuCalibratorViewModel {
     constructor(parameters) {
 
         // dependencies
@@ -91,7 +91,7 @@ class LsqDeltaCalibrationViewModel {
     // events
     ReloadSettings()
     {
-        this.settings = this.settingsViewModel.settings.plugins.LSqDeltaCalibration;
+        this.settings = this.settingsViewModel.settings.plugins.DuCalibrator;
         switch(this.settings.Firmware())
         {
             case "Marlin":
@@ -344,10 +344,10 @@ $(function () {
      * and a full list of the available options.
      */
     OCTOPRINT_VIEWMODELS.push({
-        construct: LsqDeltaCalibrationViewModel,
+        construct: DuCalibratorViewModel,
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", */ "settingsViewModel", "printerProfilesViewModel"],
-        // Elements to bind to, e.g. #settings_plugin_LSqDeltaCalibration, #tab_plugin_LSqDeltaCalibration, ...
-        elements: ["#tab_plugin_LSqDeltaCalibration", "#settings_plugin_LSqDeltaCalibration"]
+        // Elements to bind to, e.g. #settings_plugin_DuCalibrator, #tab_plugin_DuCalibrator, ...
+        elements: ["#tab_plugin_DuCalibrator", "#settings_plugin_DuCalibrator"]
     });
 });

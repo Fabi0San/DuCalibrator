@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 import octoprint.plugin
 
-class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
+class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
                                 octoprint.plugin.AssetPlugin,
                                 octoprint.plugin.TemplatePlugin,
 								octoprint.plugin.SimpleApiPlugin):
@@ -32,8 +32,8 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
         # core UI here.
         return dict(
             js=["js/DucalCommon.js","js/DuCalViewModel.js","js/DuCalGeometry.js", "js/DuCalMachine.js", "js/three.js","js/TrackballControls.js", "js/trilateration.js"],
-            css=["css/LSqDeltaCalibration.css"],
-            less=["less/LSqDeltaCalibration.less"]
+            css=["css/DuCalibrator.css"],
+            less=["less/DuCalibrator.less"]
         )
 
     ##~~ Softwareupdate hook
@@ -43,18 +43,18 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
         # Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
         # for details.
         return dict(
-            LSqDeltaCalibration=dict(
-                displayName="Lsqdeltacalibration Plugin",
+            DuCalibrator=dict(
+                displayName="DuCalibrator Plugin",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
                 type="github_release",
                 user="Fabi0San",
-                repo="OctoPrint-LSqDeltaCalibration",
+                repo="OctoPrint-DuCalibrator",
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration/archive/{target_version}.zip"
+                pip="https://github.com/Fabi0San/OctoPrint-DuCalibrator/archive/{target_version}.zip"
             )
         )
 
@@ -81,12 +81,12 @@ class LsqdeltacalibrationPlugin(octoprint.plugin.SettingsPlugin,
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "Delta Calibration"
+__plugin_name__ = "ΔµCalibrator"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
     global __plugin_implementation__
-    __plugin_implementation__ = LsqdeltacalibrationPlugin()
+    __plugin_implementation__ = DuCalibratorPlugin()
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information

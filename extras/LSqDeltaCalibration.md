@@ -1,8 +1,8 @@
 ---
 layout: plugin
 
-id: LSqDeltaCalibration
-title: OctoPrint-LSqDeltaCalibration
+id: DuCalibrator
+title: OctoPrint-DuCalibrator
 description: An OctoPrint Plugning for performing Least Squares Delta Calibration in linear delta machines.
 author: Fabio Santos
 license: AGPLv3
@@ -10,9 +10,9 @@ license: AGPLv3
 # TODO
 date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
 
-homepage: https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration
-source: https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration
-archive: https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration/archive/master.zip
+homepage: https://github.com/Fabi0San/OctoPrint-DuCalibrator
+source: https://github.com/Fabi0San/OctoPrint-DuCalibrator
+archive: https://github.com/Fabi0San/OctoPrint-DuCalibrator/archive/master.zip
 
 # TODO
 # Set this to true if your plugin uses the dependency_links setup parameter to include
@@ -86,4 +86,4 @@ compatibility:
 ---
 
 **TODO**: Longer description of your plugin, configuration examples etc. This part will be visible on the page at
-http://plugins.octoprint.org/plugin/LSqDeltaCalibration/
+http://plugins.octoprint.org/plugin/DuCalibrator/

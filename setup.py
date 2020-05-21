@@ -4,14 +4,14 @@
 ### Do not forget to adjust the following variables to your own plugin.
 
 # The plugin's identifier, has to be unique
-plugin_identifier = "LSqDeltaCalibration"
+plugin_identifier = "DuCalibrator"
 
 # The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
-plugin_package = "octoprint_LSqDeltaCalibration"
+plugin_package = "octoprint_DuCalibrator"
 
 # The plugin's human readable name. Can be overwritten within OctoPrint's internal data via __plugin_name__ in the
 # plugin module
-plugin_name = "OctoPrint-LSqDeltaCalibration"
+plugin_name = "OctoPrint-DuCalibrator"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
 plugin_version = "1.0.0"
@@ -27,7 +27,7 @@ plugin_author = "Fabio Santos"
 plugin_author_email = "fabiosan@live.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration"
+plugin_url = "https://github.com/Fabi0San/OctoPrint-DuCalibrator"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"

@@ -1,4 +1,4 @@
-# OctoPrint-LSqDeltaCalibration
+# OctoPrint-DuCalibrator
 
 **TODO:** Describe what your plugin does.
 
@@ -7,7 +7,7 @@
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
 or manually using this URL:
 
-    https://github.com/Fabi0San/OctoPrint-LSqDeltaCalibration/archive/master.zip
+    https://github.com/Fabi0San/OctoPrint-DuCalibrator/archive/master.zip
 
 **TODO:** Describe how to install your plugin, if more needs to be done than just installing it via pip or through
 the plugin manager.
