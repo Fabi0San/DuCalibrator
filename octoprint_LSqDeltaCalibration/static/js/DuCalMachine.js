@@ -275,7 +275,7 @@ class TestMachine extends AbstractMachine
         } while (Math.abs(actualPosition[ZAxis]) > almostZero);
 
         // round it UP from assumed trigger point, tor nearest addressable point.
-        carriagePositions = carriagePositions.map(p=>Math.ceil(p));
+        //carriagePositions = carriagePositions.map(p=>Math.ceil(p));
         
         return  this.Geometry().GetEffectorPosition(carriagePositions);
     }
