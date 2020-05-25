@@ -19,21 +19,68 @@ class ProbingData{
         this.Observable(this);
     }
 
-    AddPoint(x, y, z, error)
+    AddPoint(probe)
     {
-        this.DataPoints.push({ X: x, Y: y, Z: z, Error: error });
+        this.DataPoints.push(probe);
 
-        if (this.Max === undefined || error > this.Max)
-            this.Max = error;
+        if (this.Max === undefined || probe.Error > this.Max)
+            this.Max = probe.Error;
 
-        if (this.Min === undefined || error < this.Min)
-            this.Min = error;
+        if (this.Min === undefined || probe.Error < this.Min)
+            this.Min = probe.Error;
 
-        this.sumOfSquares += error * error;
+        this.sumOfSquares += probe.Error * probe.Error;
 
         this.RMS = Math.sqrt(this.sumOfSquares / this.DataPoints.length);
 
         this.Observable(this);
+    }
+}
+
+class ProbePoint
+{
+    constructor(target, actual)
+    {
+        this.Target = target;
+        this.Actual = actual;
+    }
+
+    get X()
+    {
+        return this.Actual[XAxis];
+    }
+
+    get Y()
+    {
+        return this.Actual[YAxis];
+    }
+
+    get Z()
+    {
+        return this.Actual[ZAxis];
+    }
+
+    get DeltaVector()
+    {
+        return [
+            this.Actual[XAxis] - this.Target[XAxis],
+            this.Actual[YAxis] - this.Target[YAxis],
+            this.Actual[ZAxis] - this.Target[ZAxis]
+        ];
+    }
+
+    get DeltaMagnitude()
+    {
+        var dv = this.DeltaVector;
+        return Math.sqrt(
+            Math.pow(dv[XAxis],2) +
+            Math.pow(dv[YAxis],2) +
+            Math.pow(dv[ZAxis],2));
+    }
+    
+    get Error()
+    {
+        return this.Z;
     }
 }
 

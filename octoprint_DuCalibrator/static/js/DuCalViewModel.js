@@ -103,7 +103,7 @@ class DuCalibratorViewModel {
             case "Test":
                 {
                     const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(330, 155, 300, [0,0,0], [0,0,0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(320, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -217,7 +217,7 @@ class DuCalibratorViewModel {
 
     logProbePoint(x, y, z) 
     {
-        this.ProbedData.peek().AddPoint(x, y, 0, z);
+        this.ProbedData.peek().AddPoint(new ProbePoint([x, y, 0], [x, y, z]));
         this.plot.geometry.scale(1, 1, this.adjustZScale(this.zScaleInfo, z));
 
         this.plot.geometry.attributes.position.setXYZ(this.ProbedData.peek().DataPoints.length - 1, x, y, z * this.zScaleInfo.zScale);

@@ -174,10 +174,12 @@ class DeltaGeometry
 
         this.RecomputeGeometry();
 
+        // normalize factors with 3 adjusts
         this.Height += DuCalUtils.Normalize(this.EndStopOffset);
         this.DiagonalRod += DuCalUtils.Normalize(this.DiagonalRodAdjust);
         this.Radius += DuCalUtils.Normalize(this.RadiusAdjust);
         DuCalUtils.Normalize(this.TowerOffset);
+
         this.EndStopOffsetSteps = this.EndStopOffset.map((offset, tower) => offset * this.StepsPerUnit[tower]);
         this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
 
@@ -200,7 +202,7 @@ class DeltaGeometry
         }
     
         // Transform the probing points to motor endpoints and store them in a matrix, so that we can do multiple iterations using the same data
-        var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition([point.X, point.Y, point.Z]));
+        var probedCarriagePositions = probeData.DataPoints.map(point => currentGeometry.GetCarriagePosition(point.Actual));
         var corrections = new Array(numPoints).fill(0.0);
         var initialSumOfSquares = probeData.DataPoints.reduce((acc, val) => acc += Math.pow(val.Error, 2), 0.0);
         
@@ -272,10 +274,11 @@ class DeltaGeometry
                 var sumOfSquares = 0.0;
                 for (var i = 0; i < numPoints; ++i) {
                     var effector = currentGeometry.GetEffectorPosition(probedCarriagePositions[i]);
-                    var correction = effector[ZAxis] - probeData.DataPoints[i].Z;
+                    var newProbe = new ProbePoint(probeData.DataPoints[i].Target, effector);
+                    var correction = newProbe.Error - probeData.DataPoints[i].Error;
                     corrections[i] = correction;
-                    expectedResiduals[i] = probeData.DataPoints[i].Error + correction;
-                    sumOfSquares += Math.pow(expectedResiduals[i], 2);
+                    expectedResiduals[i] = newProbe.Error;
+                    sumOfSquares += Math.pow(newProbe.Error, 2);
                 }
     
                 expectedRmsError = Math.sqrt(sumOfSquares/numPoints);
