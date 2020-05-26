@@ -80,8 +80,29 @@ class ProbePoint
     
     get Error()
     {
-        return this.Z;
+        return this.DeltaVector.reduce((p,c)=>p+c,0);
     }
+}
+
+class Vector{
+    static Derivate(vA, vB, d)
+    {
+        return [
+            (vB[XAxis]-vA[XAxis])/d,
+            (vB[YAxis]-vA[YAxis])/d,
+            (vB[ZAxis]-vA[ZAxis])/d
+        ];
+    }
+
+    static Square(vector)
+    {
+        return [
+            Math.pow(vector[XAxis],2),
+            Math.pow(vector[YAxis],2),
+            Math.pow(vector[ZAxis],2)
+        ];
+    }
+    
 }
 
 class CollapseControl {
