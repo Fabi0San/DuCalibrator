@@ -133,7 +133,7 @@ class DeltaGeometry
     
     ComputeDerivative(factor, carriagePositions, target)
     {
-        var perturb = 0.002;
+        var perturb = 0.2;
         var hiParams = this.Clone();
         var loParams = this.Clone();
         var adjust = Array(MaxFactors).fill(0.0);
@@ -145,22 +145,13 @@ class DeltaGeometry
         adjust[factor] = -perturb;
         loParams.Adjust(factorMap, adjust);
 
-        var pos = this.GetEffectorPosition(carriagePositions);
         var posHi = hiParams.GetEffectorPosition(carriagePositions);
         var posLo = loParams.GetEffectorPosition(carriagePositions);
 
-        var probe = new ProbePoint(target, pos);
         var probeHi = new ProbePoint(target, posHi);
         var probeLo = new ProbePoint(target, posLo);
 
-        var derivativeVector= Vector.Derivate(probeLo.DeltaVector, probeHi.DeltaVector, 2*perturb);
-
-        var devDotProd= derivativeVector.reduce((p,c)=>p+c,0);
-
-        console.log (probeHi, probeLo,  derivativeVector, devDotProd, (probeHi.Z - probeLo.Z) / (2 * perturb), (probeHi.Error - probeLo.Error) / (perturb) );
-        return devDotProd;
-
-        return (probeHi.Error - probe.Error) / (perturb);
+        return (probeHi.Error - probeLo.Error) / (2 * perturb);
     }
 
     Adjust(factors, corrections)
