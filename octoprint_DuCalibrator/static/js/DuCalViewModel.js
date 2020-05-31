@@ -103,7 +103,7 @@ class DuCalibratorViewModel {
             case "Test":
                 {
                     const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(320, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(320, 155, 310, [0,1,2], [0,0,0], [400,400,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -152,7 +152,7 @@ class DuCalibratorViewModel {
             this.calibrate.RodLenghtAdjust(),
             this.calibrate.RodLenghtAdjust(),
             this.calibrate.RodLenghtAdjust() && !this.calibrate.RodLength(),
-      /*this.calibrate.MaxHeight()*/];
+            this.calibrate.MaxHeight()];
 
         var result = DeltaGeometry.Calibrate(this.currentGeometry().Clone(), this.ProbedData(), factors);
         this.CalibratedData(result);

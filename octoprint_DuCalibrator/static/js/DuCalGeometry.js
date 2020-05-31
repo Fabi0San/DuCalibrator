@@ -1,6 +1,6 @@
 // Delta calibration script
 const degreesToRadians = Math.PI / 180.0;
-const MaxFactors = 16;
+const MaxFactors = 17;
 const AllTowers = [AlphaTower, BetaTower, GammaTower];
 
 class Matrix
@@ -70,15 +70,34 @@ class DeltaGeometry
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
         this.Height = height;
-        this.EndStopOffset = endStopOffset.slice();
+        this.EndStopOffset = endStopOffset;
 
         // these two need to be held in steps so steps/mm adjustment stays true
-        this.EndStopOffsetSteps = endStopOffset.map((offset, tower) => offset * stepsPerUnit[tower]);
-        this.HeightSteps = height * this.StepsPerUnit[AlphaTower];
 
         this.RecomputeGeometry();
     }
 
+    get Height()
+    {
+        return this.HeightSteps / this.StepsPerUnit[AlphaTower];
+    }
+
+    set Height(value)
+    {
+        this.HeightSteps = value * this.StepsPerUnit[AlphaTower];
+    }
+
+    get EndStopOffset()
+    {
+        return this.EndStopOffsetSteps.map((offset, tower) => offset / this.StepsPerUnit[tower]);
+    }
+
+    set EndStopOffset(value)
+    {
+        this.EndStopOffsetSteps = value.map((offset, tower) => offset * this.StepsPerUnit[tower]);
+    }
+
+    
     Clone() {
         return new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
     }
@@ -92,16 +111,13 @@ class DeltaGeometry
             [-((this.Radius + this.RadiusAdjust[GammaTower]) * Math.sin(this.TowerOffset[GammaTower] * degreesToRadians)),
             +((this.Radius + this.RadiusAdjust[GammaTower]) * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
-        // Up the mm properties from the calibrated steps.
-        this.Height = this.HeightSteps / this.StepsPerUnit[AlphaTower];
-        this.EndStopOffset = this.EndStopOffsetSteps.map((offset, tower) => offset / this.StepsPerUnit[tower]);
 
         // compute tower heigh in steps
-        this.TowerHeightSteps = AllTowers.map(tower => (
-            this.EndStopOffset[tower] +         // height from endstop to home position in mm
-            this.Height +                       // height from home to carriage at touch in mm
-            this.CarriagemmFromBottom([0, 0, 0], tower))   // height from carriage at touch to bed in mm
-            * this.StepsPerUnit[tower]);        // convert to steps
+        this.TowerHeightSteps = AllTowers.map(tower => 
+            this.EndStopOffsetSteps[tower] +         // height from endstop to home position in steps
+            this.HeightSteps +                       // height from home to carriage at touch in steps
+            (this.CarriagemmFromBottom([0, 0, 0], tower)   // height from carriage at touch to bed in mm
+                * this.StepsPerUnit[tower]));        // convert to steps
     }
 
     GetCarriagePosition(position) {
@@ -174,20 +190,18 @@ class DeltaGeometry
         if (factors[13]) this.DiagonalRodAdjust[AlphaTower] += corrections[i++];
         if (factors[14]) this.DiagonalRodAdjust[BetaTower] += corrections[i++];
         if (factors[15]) this.DiagonalRodAdjust[GammaTower] += corrections[i++];
-
-        this.RecomputeGeometry();
+        if (factors[16]) this.HeightSteps += corrections[i++];
 
         // normalize factors with 3 adjusts
-        this.Height += DuCalUtils.Normalize(this.EndStopOffset);
+        var endStopOffsets = this.EndStopOffset;
+        this.Height += DuCalUtils.Normalize(endStopOffsets);
+        this.EndStopOffset = endStopOffsets;
+
         this.DiagonalRod += DuCalUtils.Normalize(this.DiagonalRodAdjust);
         this.Radius += DuCalUtils.Normalize(this.RadiusAdjust);
         DuCalUtils.Normalize(this.TowerOffset);
 
-        this.EndStopOffsetSteps = this.EndStopOffset.map((offset, tower) => offset * this.StepsPerUnit[tower]);
-        this.HeightSteps = this.Height * this.StepsPerUnit[AlphaTower];
-
         this.RecomputeGeometry();
-    
     }
     
     static Calibrate(currentGeometry, probeData, factors) 
