@@ -228,9 +228,9 @@ class DuCalibratorViewModel {
     adjustZScale(zScaleInfo, z) 
     {
         if ((zScaleInfo.maxZ === undefined) || (z > zScaleInfo.maxZ))
-            zScaleInfo.maxZ = z;
+            zScaleInfo.maxZ = Math.max(z, 1e-3);
         if ((zScaleInfo.minZ === undefined) || (z < zScaleInfo.minZ))
-            zScaleInfo.minZ = z;
+            zScaleInfo.minZ = Math.min(z, -1e-3);
 
         if (zScaleInfo.maxZ === zScaleInfo.minZ)
             return 1;
