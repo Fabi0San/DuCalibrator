@@ -174,7 +174,7 @@
             <div class="span2" data-bind="text: newGeometry().StepsPerUnit[1].toFixed(4)"></div>
             <div class="span2" data-bind="text: newGeometry().StepsPerUnit[2].toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.StepsPerUnit, enable: !((calibrate.RodLength() || calibrate.RodLenghtAdjust()) && (calibrate.DeltaRadius() || calibrate.DeltaRadiusAdjust()))" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.StepsPerUnit, enable: !(calibrate.RodLength() && calibrate.DeltaRadius())" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -184,7 +184,7 @@
             <div class="span2" data-bind="text: newGeometry().TowerOffset[1].toFixed(4)"></div>
             <div class="span2" data-bind="text: newGeometry().TowerOffset[2].toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.TowerOffset" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.TowerOffset, enable: !calibrate.DeltaRadiusAdjust()" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -192,7 +192,7 @@
             <div class="span3">{{ _('Max Height') }}</div>
             <div class="span6" data-bind="text: newGeometry().Height.toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.MaxHeight, enable: true" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.MaxHeight, enable: !calibrate.EndStopOffset()" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -202,7 +202,7 @@
             <div class="span2" data-bind="text: newGeometry().EndStopOffset[1].toFixed(4)"></div>
             <div class="span2" data-bind="text: newGeometry().EndStopOffset[2].toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.EndStopOffset" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.EndStopOffset, enable: calibrate.MaxHeight" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -210,7 +210,7 @@
             <div class="span3">{{ _('Rod Length') }}</div>
             <div class="span6" data-bind="text: newGeometry().DiagonalRod.toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.RodLength" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.RodLength, enable: (!calibrate.RodLenghtAdjust() && !(calibrate.StepsPerUnit() && calibrate.DeltaRadius()))" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -220,7 +220,7 @@
             <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[1].toFixed(4)"></div>
             <div class="span2" data-bind="text: newGeometry().DiagonalRodAdjust[2].toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.RodLenghtAdjust" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.RodLenghtAdjust, enable: calibrate.RodLength" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -228,7 +228,7 @@
             <div class="span3">{{ _('Delta Radius') }}</div>
             <div class="span6" data-bind="text: newGeometry().Radius.toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.DeltaRadius" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.DeltaRadius, enable: (!calibrate.DeltaRadiusAdjust() && !(calibrate.StepsPerUnit() && calibrate.RodLength()))" title="{{ _('Calibrate') }}" />
             </div>
           </div>
 
@@ -238,7 +238,7 @@
             <div class="span2" data-bind="text: newGeometry().RadiusAdjust[1].toFixed(4)"></div>
             <div class="span2" data-bind="text: newGeometry().RadiusAdjust[2].toFixed(4)"></div>
             <div class="input-append span1">
-              <input type="checkbox" data-bind="checked: calibrate.DeltaRadiusAdjust" title="{{ _('Calibrate') }}" />
+              <input type="checkbox" data-bind="checked: calibrate.DeltaRadiusAdjust , enable: (calibrate.DeltaRadius() && !calibrate.TowerOffset())" title="{{ _('Calibrate') }}" />
             </div>
           </div>
         </div>
