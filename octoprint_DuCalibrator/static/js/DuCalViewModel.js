@@ -102,8 +102,8 @@ class DuCalibratorViewModel {
                 break;
             case "Test":
                 {
-                    const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(320, 155, 310, [0,1,2], [0,0,0], [400,400,400]);
+                    const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
+                    const initialGeo = new DeltaGeometry(340, 175, 302, [0,0,0], [0,0,0], [400,400,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -138,7 +138,7 @@ class DuCalibratorViewModel {
         var factors = [
             this.calibrate.EndStopOffset(),
             this.calibrate.EndStopOffset(),
-            this.calibrate.EndStopOffset(),
+            this.calibrate.EndStopOffset() && !this.calibrate.MaxHeight(),
             this.calibrate.DeltaRadius(),
             this.calibrate.TowerOffset(),
             this.calibrate.TowerOffset(),
