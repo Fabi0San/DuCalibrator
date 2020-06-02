@@ -229,7 +229,7 @@ class DeltaGeometry
         var expectedRmsError;
         var bestRmsError = initialRms;
         var bestGeometry = currentGeometry.Clone();
-        var bestResiduals = probeData;
+        var bestResiduals = probeData.DataPoints;
         for (var iteration = 0; iteration<20; iteration++) {
             // Build a matrix of derivatives.
             var derivativeMatrix = new Matrix(numPoints, numFactors);
@@ -294,7 +294,7 @@ class DeltaGeometry
                     var newProbe = new ProbePoint(probeData.DataPoints[i].Target, effector);
                     var correction = newProbe.Error - probeData.DataPoints[i].Error;
                     corrections[i] = correction;
-                    expectedResiduals[i] = newProbe.Error;
+                    expectedResiduals[i] = newProbe;
                     sumOfSquares += Math.pow(newProbe.Error, 2);
                 }
     
@@ -315,8 +315,8 @@ class DeltaGeometry
         return {
             Geometry: bestGeometry,
             RMS: bestRmsError,
-            Min: Math.min.apply(null, bestResiduals),
-            Max: Math.max.apply(null, bestResiduals),
+            Min: Math.min.apply(null, bestResiduals?.map(i=>i.Error)),
+            Max: Math.max.apply(null, bestResiduals?.map(i=>i.Error)),
             Residuals: bestResiduals
         };
     }

@@ -120,7 +120,8 @@ class DuCalibratorViewModel {
         new ProbingData(this.ProbedData);
 
         if (this.plot) {
-            this.plot.geometry.dispose();
+            this.plot.probedParticles.geometry.dispose();
+            this.plot.correctedParticles.geometry.dispose();
             this.plot = null;
         }
 
@@ -155,6 +156,15 @@ class DuCalibratorViewModel {
             this.calibrate.MaxHeight()];
 
         var result = DeltaGeometry.Calibrate(this.currentGeometry().Clone(), this.ProbedData(), factors);
+
+        for (var i = 0; i < result.Residuals.length; ++i) 
+        {
+            this.plot.correctedParticles.geometry.attributes.position.setXYZ(i, result.Residuals[i].X, result.Residuals[i].Y, result.Residuals[i].Z * this.zScaleInfo.zScale);            
+        }
+
+        this.plot.correctedParticles.geometry.setDrawRange(0, result.Residuals.length);
+        this.plot.correctedParticles.geometry.attributes.position.needsUpdate = true;
+
         this.CalibratedData(result);
         this.newGeometry(result.Geometry);
 
@@ -188,11 +198,16 @@ class DuCalibratorViewModel {
         var geometry = new THREE.BufferGeometry();
         var vertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
         geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        var probedParticles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true }));
+        probedParticles.geometry.setDrawRange(0, 0);
+        scene.add(probedParticles);
 
-        var particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true }));
-        particles.geometry.setDrawRange(0, 0);
-
-        scene.add(particles);
+        var correctedGeometry = new THREE.BufferGeometry();
+        var correctedVertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
+        correctedGeometry.addAttribute('position', new THREE.BufferAttribute(correctedVertices, 3));
+        var correctedParticles = new THREE.Points(correctedGeometry, new THREE.PointsMaterial({ color: 0x008000, size: 5, sizeAttenuation: true }));
+        correctedParticles.geometry.setDrawRange(0, 0);
+        scene.add(correctedParticles);
 
         // camera
         var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
@@ -211,18 +226,18 @@ class DuCalibratorViewModel {
 
         animate();
 
-        return particles;
-
+        return {probedParticles: probedParticles, correctedParticles: correctedParticles};
     }
 
     logProbePoint(x, y, z) 
     {
         this.ProbedData.peek().AddPoint(new ProbePoint([x, y, 0], [x, y, z]));
-        this.plot.geometry.scale(1, 1, this.adjustZScale(this.zScaleInfo, z));
+        var newScale = this.adjustZScale(this.zScaleInfo, z);
+        this.plot.probedParticles.geometry.scale(1, 1, newScale);
 
-        this.plot.geometry.attributes.position.setXYZ(this.ProbedData.peek().DataPoints.length - 1, x, y, z * this.zScaleInfo.zScale);
-        this.plot.geometry.setDrawRange(0, this.ProbedData.peek().DataPoints.length);
-        this.plot.geometry.attributes.position.needsUpdate = true;
+        this.plot.probedParticles.geometry.attributes.position.setXYZ(this.ProbedData.peek().DataPoints.length - 1, x, y, z * this.zScaleInfo.zScale);
+        this.plot.probedParticles.geometry.setDrawRange(0, this.ProbedData.peek().DataPoints.length);
+        this.plot.probedParticles.geometry.attributes.position.needsUpdate = true;
     }
 
     adjustZScale(zScaleInfo, z) 
