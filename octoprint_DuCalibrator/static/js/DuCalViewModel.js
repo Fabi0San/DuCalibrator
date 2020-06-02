@@ -164,6 +164,10 @@ class DuCalibratorViewModel {
 
         this.plot.correctedParticles.geometry.setDrawRange(0, result.Residuals.length);
         this.plot.correctedParticles.geometry.attributes.position.needsUpdate = true;
+        this.plot.probedParticles.material.opacity = 0.5;
+        this.plot.probedParticles.material.size = 3;
+        this.plot.probedParticles.material.transparent = true;
+        this.plot.probedParticles.material.needsUpdate = true;
 
         this.CalibratedData(result);
         this.newGeometry(result.Geometry);
@@ -183,12 +187,6 @@ class DuCalibratorViewModel {
         if (surfacePlotDiv.firstChild) surfacePlotDiv.removeChild(surfacePlotDiv.firstChild);
         surfacePlotDiv.appendChild(renderer.domElement);
 
-        // add the bed plate for reference
-        scene.add(
-            new THREE.Mesh(
-                (new THREE.CylinderBufferGeometry(bedRadius, bedRadius, 0.001, 32))
-                    .rotateX(Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.6, transparent: true })));
 
         // Axes arrows
         scene.add(new THREE.ArrowHelper(new THREE.Vector3(bedRadius, 0, 0), new THREE.Vector3(-bedRadius, -bedRadius, 0), bedRadius / 2, 0xff0000));
@@ -198,17 +196,24 @@ class DuCalibratorViewModel {
         var geometry = new THREE.BufferGeometry();
         var vertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
         geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
-        var probedParticles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true }));
+        var probedParticles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true, transparent: true, opacity: 1 }));
         probedParticles.geometry.setDrawRange(0, 0);
         scene.add(probedParticles);
 
         var correctedGeometry = new THREE.BufferGeometry();
         var correctedVertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
         correctedGeometry.addAttribute('position', new THREE.BufferAttribute(correctedVertices, 3));
-        var correctedParticles = new THREE.Points(correctedGeometry, new THREE.PointsMaterial({ color: 0x008000, size: 5, sizeAttenuation: true }));
+        var correctedParticles = new THREE.Points(correctedGeometry, new THREE.PointsMaterial({ color: 0x00bb00, size: 5, sizeAttenuation: true }));
         correctedParticles.geometry.setDrawRange(0, 0);
         scene.add(correctedParticles);
 
+        // add the bed plate for reference
+        scene.add(
+            new THREE.Mesh(
+                (new THREE.CylinderBufferGeometry(bedRadius, bedRadius, 0.001, 32))
+                    .rotateX(Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x8080FF, opacity: 0.3, transparent: true })));
+        
         // camera
         var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
         camera.position.set(0, -bedRadius * 4, bedRadius);
