@@ -31,6 +31,9 @@ class DuCalibratorViewModel {
         this.isProbing = ko.observable(false);
         this.isCalibrating = ko.observable(false);
         this.probingProgressString = ko.observable("0");
+
+        this.showProbedPoints = ko.observable(true);
+        this.showCalibratedPoints = ko.observable(true);
         
         this.isReadyToCalibrate = ko.observable(false);
 
@@ -263,6 +266,13 @@ class DuCalibratorViewModel {
     }
 
     // ui commands
+    updateVisiblePoints()
+    {
+        this.plot.probedParticles.visible = this.showProbedPoints();
+        this.plot.correctedParticles.visible = this.showCalibratedPoints();
+        return true;
+    }
+
     async configureGeometry() {
         await this.ConfigureGeometry(this.newGeometry());
     }
