@@ -1,8 +1,12 @@
-# Delta Micro Calibrator
+# Delta Micro Calibrator "ΔµCalibrator"
+## An OctoPrint Plugin for performing micro calibration in linear delta machines.
 
-An OctoPrint Plugin for performing micro calibration in linear delta machines.
-It calibrates up to 16 geometry parameters using least squares regression algorithm.
-It currently only supports Marlin firmware, other firmwares can be added with some community help.
+Key features:
+* Automatic probing
+* Calibrates up to 18 geometry parameters 
+* 3D visualization of probed points and estimated points after proposed calibration
+
+Currently, it only supports Marlin firmware, other firmwares can be added with some community help.
 
 ## Setup
 
