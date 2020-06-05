@@ -224,6 +224,8 @@ class DuCalibratorViewModel {
         controls.minDistance = 10;
         controls.maxDistance = bedRadius * 5;
 
+        this.showProbedPoints(true);
+        this.showCalibratedPoints(true);
 
         var animate = function () {
             requestAnimationFrame(animate);
