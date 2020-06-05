@@ -10,6 +10,7 @@ from __future__ import absolute_import
 # Take a look at the documentation on what other plugin mixins are available.
 
 import octoprint.plugin
+import sys
 
 class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
                                 octoprint.plugin.AssetPlugin,
@@ -44,7 +45,7 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
         # for details.
         return dict(
             DuCalibrator=dict(
-                displayName="DuCalibrator Plugin",
+                displayName="Delta Micro Calibrator Plugin",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
@@ -58,30 +59,10 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
             )
         )
 
-    def get_api_commands(self):
-        return dict(
-            command1=[],
-            command2=["some_parameter"]
-        )
-
-    def on_api_command(self, command, data):
-        import flask
-        if command == "command1":
-            parameter = "unset"
-            if "parameter" in data:
-                parameter = "set"
-            self._logger.info("command1 called, parameter is {parameter}".format(**locals()))
-        elif command == "command2":
-            self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
-
-    def on_api_get(self, request):
-        return flask.jsonify(foo="bar")
-
-
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "ΔµCalibrator"
+__plugin_name__ = "ΔµCalibrator" if sys.version_info[0] >= 3 else "DuCalibrator"
 __plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
