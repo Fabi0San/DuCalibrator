@@ -17,9 +17,7 @@ class DuCalibratorViewModel {
         this.zScaleInfo = undefined;
         this.settings = undefined;
 
-        //config
-        this.isSimulation = ko.observable(true);
-        this.isTest = ko.observable(true);
+        // parameters
         this.probeRadius = ko.observable(this.printerProfilesViewModel.currentProfileData().volume.width() / 2);
         this.probePointCount = ko.observable(50);
 
@@ -103,7 +101,7 @@ class DuCalibratorViewModel {
             case "Smoothie":
                 this.machine(new SmoothieMachine(this.settings));
                 break;
-            case "Test":
+            case "Simulated":
                 {
                     const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
                     const initialGeo = new DeltaGeometry(340, 175, 302, [0,0,0], [0,0,0], [400,400,400]);

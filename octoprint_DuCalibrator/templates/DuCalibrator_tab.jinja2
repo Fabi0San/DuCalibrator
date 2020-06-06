@@ -1,21 +1,26 @@
 <form id="tab_plugin_DuCalibrator" class="form-horizontal">
   <ul class="nav nav-pills">
+    <li>
+      <a href="#instructions_tab" data-toggle="tab">{{ _('Instructions') }}</a>
+    </li>
+    <li>
+      <a href="#params_tab" data-toggle="tab">{{ _('Parameters') }}</a>
+    </li>
     <li class="active">
       <a href="#calibrate_tab" data-toggle="tab">{{ _('Calibrate') }}</a>
     </li>
-    <li>
-      <a href="#settings_tab" data-toggle="tab">{{ _('Settings') }}</a>
-    </li>
-    <li>
-      <a href="#about_tab" data-toggle="tab">{{ _('About') }}</a>
-    </li>
   </ul>
 
-  <div class="tab-content">
+  <div class="tab-content" style="border-left:none; border-right:none; border-bottom:none">
 
-    <div id="settings_tab" class="tab-pane">
+    <div id="instructions_tab" class="tab-pane" markdown="1">
+{% filter markdown %}
+{% include "instructions.md" %}
+{% endfilter %}
+    </div>
 
-              <div class="control-group">
+    <div id="params_tab" class="tab-pane">
+      <div class="control-group">
           <label class="control-label">{{ _('Probing Radius') }} :</label>
           <div class="input-append">
               <input type="number" data-bind="value: probeRadius" step="1" class="input-small"/>
@@ -26,18 +31,6 @@
           <div class="input-append">
               <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
           </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label">{{ _('Simulation mode') }} :</label>
-        <div class="input-append">
-          <input type="checkbox" data-bind="checked: isSimulation" title="{{ _('Simulate printer responses for testing purposes.') }}" />
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label">{{ _('Test mode') }} :</label>
-        <div class="input-append">
-          <input type="checkbox" data-bind="checked: isTest" title="{{ _('TestingMode.') }}" />
-        </div>
       </div>
     </div>
 
