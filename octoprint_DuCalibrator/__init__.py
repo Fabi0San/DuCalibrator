@@ -22,7 +22,7 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
     def get_settings_defaults(self):
         return dict(
             # put your plugin's default settings here
-            Firmware="Marlin",
+            Firmware="Simulated",
             InitCommands="G28 ;home\nM204 T200 ;accel\nG0 F12000 ;speed",
             SafeHeight="5"
         )
