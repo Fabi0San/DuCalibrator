@@ -1,34 +1,18 @@
 # Instructions
-----
-## what is Markdown?
-see [Wikipedia](https://en.wikipedia.org/wiki/Markdown)
 
-> Markdown is a lightweight markup language, originally created by John Gruber and Aaron Swartz allowing people "to write using an easy-to-read, easy-to-write plain text format, then convert it to structurally valid XHTML (or HTML)".
+#### 1. **Perform initial calibration elsewhere.**
+This plugin's main goal is to find micron level delta geometry parameters, so please perform initial delta calibration using other methods.
 
-----
-## usage
-1. Write markdown text in this textarea.
-2. Click 'HTML Preview' button.
+#### 2. **Configure settings**
+Make sure to configure this plugin to your machine in OctoPrint's settings dialog.
 
-----
-## markdown quick reference
-# headers
+#### 3. **Set Parameters**
+Set the probing parameters.
 
-*emphasis*
-
-**strong**
-
-* list
-
->block quote
-
-    code (4 spaces indent)
-[links](https://wikipedia.org)
-
-----
-## changelog
-* 17-Feb-2013 re-design
-
-----
-## thanks
-* [markdown-js](https://github.com/evilstreak/markdown-js)
+#### 4. **Calibrate**
+1. Fetch Geometry
+2. Probe bed
+3. Select calibration factors
+4. Apply
+5. Repeat from 2. until probed RMS stops converging
+6. Pick best probing(lowest RMS) from "Probing history" and Apply & Save it to your machine.
