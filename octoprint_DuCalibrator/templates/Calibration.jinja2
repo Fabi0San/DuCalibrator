@@ -2,7 +2,7 @@
         <h4>
           <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isCalibrating()"></i><a href="#collapseCalibration" id="collapseCalibrationControl"  data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
           {{ _('Calibration') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:CalibratedData , data: CalibratedData }"></span>
-          <button class="btn btn-primary pull-right" data-bind="click: configureGeometry, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Apply') }}</button>
+          <button class="btn btn-primary pull-right" data-bind="click: applyCalibration, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Apply') }}</button>
         </h4>
         <div class="row-fluid collapse" id="collapseCalibration">
           <div class="row-fluid">

@@ -23,7 +23,7 @@ class AbstractMachine
     {        
     }
 
-    async SetGeometry(geometry)
+    async SetGeometry(geometry, save)
     {
     }
 
@@ -75,10 +75,12 @@ class RealMachine extends AbstractMachine
         return newGeometry;
     }
 
-    async SetGeometry(geometry)
+    async SetGeometry(geometry, save)
     {
         this.IsBusy(true);
         await this.comms.Execute(this.geometryElementParsers.map(element => element.GetCommand(geometry)));
+        if(save)
+            await this.comms.Execute(this.commands.SaveSettings);
         await this.Init();
         const result = await this.GetGeometry();
         this.IsBusy(false);

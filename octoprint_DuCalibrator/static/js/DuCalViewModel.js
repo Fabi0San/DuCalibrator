@@ -273,8 +273,8 @@ class DuCalibratorViewModel {
         return true;
     }
 
-    async configureGeometry() {
-        await this.ConfigureGeometry(this.newGeometry());
+    async applyCalibration() {
+        await this.ConfigureGeometry(this.newGeometry(), false);
     }
 
     cancelProbing()
@@ -282,10 +282,10 @@ class DuCalibratorViewModel {
         this.cancelProbingRequested = true;
     }
 
-    async ConfigureGeometry(geometry) 
+    async ConfigureGeometry(geometry, save) 
     {
         this.isCalibrating(true);
-        await this.machine().SetGeometry(geometry);
+        await this.machine().SetGeometry(geometry, save);
         this.GeometryControl.Show();
         this.resetProbeData();
         this.resetCalibrationData();
@@ -362,8 +362,8 @@ class DuCalibratorViewModel {
         this.isFetchingGeometry(false);
     }
 
-    LoadGeometry(data) {
-        this.ConfigureGeometry(data.Geometry);
+    async SaveGeometry(data) {
+        await this.ConfigureGeometry(data.Geometry, true);
     }
 
 }
