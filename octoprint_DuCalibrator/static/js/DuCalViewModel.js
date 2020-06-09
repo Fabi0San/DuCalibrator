@@ -32,6 +32,7 @@ class DuCalibratorViewModel {
 
         this.showProbedPoints = ko.observable(true);
         this.showCalibratedPoints = ko.observable(true);
+        this.showAsCorrections = ko.observable("true");
         
         this.isReadyToCalibrate = ko.observable(false);
 
