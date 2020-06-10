@@ -51,13 +51,13 @@ class DuCalibratorViewModel {
         this.calibrate =
         {
             StepsPerUnit: ko.observable(false),
-            EndStopOffset: ko.observable(true),
+            EndStopOffset: ko.observable(false),
             TowerOffset: ko.observable(true),
             RodLength: ko.observable(true),
             RodLenghtAdjust: ko.observable(false),
-            DeltaRadius: ko.observable(true),
+            DeltaRadius: ko.observable(false),
             DeltaRadiusAdjust: ko.observable(false),
-            MaxHeight: ko.observable(true)
+            MaxHeight: ko.observable(false)
         };
 
         this.calibrate.StepsPerUnit.subscribe(this.computeCorrections, this);
@@ -104,8 +104,9 @@ class DuCalibratorViewModel {
                 break;
             case "Simulated":
                 {
-                    const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
-                    const initialGeo = new DeltaGeometry(340, 175, 302, [0,0,0], [0,0,0], [400,400,400]);
+                    //const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
+                    const testGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,401,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -361,6 +362,21 @@ class DuCalibratorViewModel {
         this.GeometryControl.Show();
         this.PlotControl.Hide();
         this.isFetchingGeometry(false);
+
+        var adjust = Array(17).fill(0.0);
+        var factorMap = Array(17).fill(true);
+        adjust[7]=-40;
+        adjust[8]=0;
+        adjust[9]=0;//-4;
+        //debugger;
+
+        const testGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,400,400]);
+        var positions = testGeo.GetCarriagePosition([0,0,0]);
+        console.log(testGeo, positions)
+        testGeo.Adjust(factorMap, adjust);
+        console.log(testGeo, testGeo.GetEffectorPosition(positions));
+
+
     }
 
     async SaveGeometry(data) {

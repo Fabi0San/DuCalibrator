@@ -79,12 +79,12 @@ class DeltaGeometry
 
     get Height()
     {
-        return this.HeightSteps / this.StepsPerUnit[AlphaTower];
+        return this.HeightSteps / (this.StepsPerUnit.reduce((a,b)=>a+b,0) /3);
     }
 
     set Height(value)
     {
-        this.HeightSteps = value * this.StepsPerUnit[AlphaTower];
+        this.HeightSteps = value * (this.StepsPerUnit.reduce((a,b)=>a+b,0)/3);
     }
 
     get EndStopOffset()
@@ -114,10 +114,10 @@ class DeltaGeometry
 
         // compute tower heigh in steps
         this.TowerHeightSteps = AllTowers.map(tower => 
-            this.EndStopOffsetSteps[tower] +         // height from endstop to home position in steps
-            this.HeightSteps +                       // height from home to carriage at touch in steps
+            this.EndStopOffsetSteps[tower] +               // height from endstop to home position in steps
+            (this.Height * this.StepsPerUnit[tower]) +     // height from home to carriage at touch in steps
             (this.CarriagemmFromBottom([0, 0, 0], tower)   // height from carriage at touch to bed in mm
-                * this.StepsPerUnit[tower]));        // convert to steps
+                * this.StepsPerUnit[tower]));              // convert to steps
     }
 
     GetCarriagePosition(position) {
@@ -172,6 +172,7 @@ class DeltaGeometry
 
     Adjust(factors, corrections)
     {
+        //const posAtZero = this.GetCarriagePosition([0,0,0]);
         var i = 0;
 
         if (factors[0]) this.EndStopOffsetSteps[AlphaTower] += corrections[i++];
@@ -311,7 +312,7 @@ class DeltaGeometry
             }
         }
         console.log("Calibrated " + numFactors + " factors using " + numPoints + " points, deviation before " + Math.sqrt(initialSumOfSquares / numPoints) + " after " + bestRmsError);
-        
+
         return {
             Geometry: bestGeometry,
             RMS: bestRmsError,
