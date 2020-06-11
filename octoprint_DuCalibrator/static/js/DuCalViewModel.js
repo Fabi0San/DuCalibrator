@@ -361,21 +361,6 @@ class DuCalibratorViewModel {
         this.GeometryControl.Show();
         this.PlotControl.Hide();
         this.isFetchingGeometry(false);
-
-        var adjust = Array(17).fill(0.0);
-        var factorMap = Array(17).fill(true);
-        adjust[7]=-40;
-        adjust[8]=0;
-        adjust[9]=0;//-4;
-        //debugger;
-
-        const testGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,400,400]);
-        var positions = testGeo.GetCarriagePosition([0,0,0]);
-        console.log(testGeo, positions)
-        testGeo.Adjust(factorMap, adjust);
-        console.log(testGeo, testGeo.GetEffectorPosition(positions));
-
-
     }
 
     async SaveGeometry(data) {
