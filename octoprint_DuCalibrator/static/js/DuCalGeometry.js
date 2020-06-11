@@ -77,16 +77,6 @@ class DeltaGeometry
         this.RecomputeGeometry();
     }
 
-    get Height()
-    {
-        return this.HeightSteps / (this.StepsPerUnit.reduce((a,b)=>a+b,0) /3);
-    }
-
-    set Height(value)
-    {
-        this.HeightSteps = value * (this.StepsPerUnit.reduce((a,b)=>a+b,0)/3);
-    }
-
     get EndStopOffset()
     {
         return this.EndStopOffsetSteps.map((offset, tower) => offset / this.StepsPerUnit[tower]);
@@ -96,7 +86,6 @@ class DeltaGeometry
     {
         this.EndStopOffsetSteps = value.map((offset, tower) => offset * this.StepsPerUnit[tower]);
     }
-
     
     Clone() {
         return new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
@@ -129,11 +118,6 @@ class DeltaGeometry
     CarriagemmFromBottom(machinePos, tower)
     {
         return machinePos[ZAxis] + Math.sqrt(Math.pow(this.DiagonalRod + this.DiagonalRodAdjust[tower],2) - Math.pow(machinePos[XAxis] - this.towerPositions[tower][XAxis],2) - Math.pow(machinePos[YAxis] - this.towerPositions[tower][YAxis],2));
-    }
-
-    GetZ(carriagePositions)
-    {
-        return this.GetEffectorPosition(carriagePositions)[ZAxis];
     }
 
     GetEffectorPosition(carriagePositions) {
@@ -191,7 +175,7 @@ class DeltaGeometry
         if (factors[13]) this.DiagonalRodAdjust[AlphaTower] += corrections[i++];
         if (factors[14]) this.DiagonalRodAdjust[BetaTower] += corrections[i++];
         if (factors[15]) this.DiagonalRodAdjust[GammaTower] += corrections[i++];
-        if (factors[16]) this.HeightSteps += corrections[i++];
+        if (factors[16]) this.Height += corrections[i++];
 
         // normalize factors with 3 adjusts
         var endStopOffsets = this.EndStopOffset;
