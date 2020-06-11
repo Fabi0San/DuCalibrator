@@ -70,22 +70,11 @@ class DeltaGeometry
         this.TowerOffset = towerOffset.slice();
         this.StepsPerUnit = stepsPerUnit.slice();
         this.Height = height;
-        this.EndStopOffset = endStopOffset;
-
-        // these two need to be held in steps so steps/mm adjustment stays true
+        this.EndStopOffset = endStopOffset.slice();
 
         this.RecomputeGeometry();
     }
 
-    get EndStopOffset()
-    {
-        return this.EndStopOffsetSteps.map((offset, tower) => offset / this.StepsPerUnit[tower]);
-    }
-
-    set EndStopOffset(value)
-    {
-        this.EndStopOffsetSteps = value.map((offset, tower) => offset * this.StepsPerUnit[tower]);
-    }
     
     Clone() {
         return new DeltaGeometry(this.DiagonalRod, this.Radius, this.Height, this.EndStopOffset, this.TowerOffset, this.StepsPerUnit, this.RadiusAdjust, this.DiagonalRodAdjust);
@@ -101,18 +90,18 @@ class DeltaGeometry
             +((this.Radius + this.RadiusAdjust[GammaTower]) * Math.cos(this.TowerOffset[GammaTower] * degreesToRadians))]];
 
 
-        // compute tower heigh in steps
-        this.TowerHeightSteps = AllTowers.map(tower => 
-            this.EndStopOffsetSteps[tower] +               // height from endstop to home position in steps
-            (this.Height * this.StepsPerUnit[tower]) +     // height from home to carriage at touch in steps
-            (this.CarriagemmFromBottom([0, 0, 0], tower)   // height from carriage at touch to bed in mm
-                * this.StepsPerUnit[tower]));              // convert to steps
+        // compute tower height
+        this.TowerHeight = AllTowers.map(tower => 
+            (this.EndStopOffset[tower] +               // height from endstop to home position in steps
+            this.Height +     // height from home to carriage at touch in steps
+            this.CarriagemmFromBottom([0, 0, 0], tower)));   // height from carriage at touch to bed in mm
     }
 
     GetCarriagePosition(position) {
         return AllTowers.map(tower => //Math.round // rounded to constrain to machine's adressable positions
-            (this.TowerHeightSteps[tower] -
-            (this.CarriagemmFromBottom(position, tower) * this.StepsPerUnit[tower]))); // fromBottom
+            (this.TowerHeight[tower]
+                - this.CarriagemmFromBottom(position, tower)) 
+            * this.StepsPerUnit[tower]); // fromBottom
     }
 
     CarriagemmFromBottom(machinePos, tower)
@@ -124,7 +113,7 @@ class DeltaGeometry
         var p = AllTowers.map(tower => ({
             x: (this.towerPositions[tower][XAxis]),
             y: (this.towerPositions[tower][YAxis]),
-            z: ((this.TowerHeightSteps[tower] - carriagePositions[tower]) / this.StepsPerUnit[tower]),
+            z: (this.TowerHeight[tower] - (carriagePositions[tower] / this.StepsPerUnit[tower])),
             r: this.DiagonalRod + this.DiagonalRodAdjust[tower]
         }));
         var results = trilaterate(p[0], p[1], p[2]);
@@ -156,12 +145,11 @@ class DeltaGeometry
 
     Adjust(factors, corrections)
     {
-        //const posAtZero = this.GetCarriagePosition([0,0,0]);
         var i = 0;
 
-        if (factors[0]) this.EndStopOffsetSteps[AlphaTower] += corrections[i++];
-        if (factors[1]) this.EndStopOffsetSteps[BetaTower] += corrections[i++];
-        if (factors[2]) this.EndStopOffsetSteps[GammaTower] += corrections[i++];
+        if (factors[0]) this.EndStopOffset[AlphaTower] += corrections[i++];
+        if (factors[1]) this.EndStopOffset[BetaTower] += corrections[i++];
+        if (factors[2]) this.EndStopOffset[GammaTower] += corrections[i++];
         if (factors[3]) this.Radius += corrections[i++];
         if (factors[4]) this.TowerOffset[AlphaTower] += corrections[i++];
         if (factors[5]) this.TowerOffset[BetaTower] += corrections[i++];

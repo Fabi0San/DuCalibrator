@@ -106,7 +106,7 @@ class DuCalibratorViewModel {
                 {
                     //const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
                     const testGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,401,400]);
+                    const initialGeo = new DeltaGeometry(340, 175, 300, [1,0,0], [0,0,0], [400,401,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
