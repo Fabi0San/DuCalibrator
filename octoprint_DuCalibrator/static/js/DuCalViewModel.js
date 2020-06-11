@@ -51,13 +51,13 @@ class DuCalibratorViewModel {
         this.calibrate =
         {
             StepsPerUnit: ko.observable(false),
-            EndStopOffset: ko.observable(false),
+            EndStopOffset: ko.observable(true),
             TowerOffset: ko.observable(true),
             RodLength: ko.observable(true),
             RodLenghtAdjust: ko.observable(false),
-            DeltaRadius: ko.observable(false),
+            DeltaRadius: ko.observable(true),
             DeltaRadiusAdjust: ko.observable(false),
-            MaxHeight: ko.observable(false)
+            MaxHeight: ko.observable(true)
         };
 
         this.calibrate.StepsPerUnit.subscribe(this.computeCorrections, this);
@@ -104,9 +104,8 @@ class DuCalibratorViewModel {
                 break;
             case "Simulated":
                 {
-                    //const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
-                    const testGeo = new DeltaGeometry(340, 175, 300, [0,0,0], [0,0,0], [400,400,400]);
-                    const initialGeo = new DeltaGeometry(340, 175, 300, [1,0,0], [0,0,0], [400,401,400]);
+                    const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
+                    const initialGeo = new DeltaGeometry(340, 175, 302, [0,0,0], [0,0,0], [400,400,400]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
