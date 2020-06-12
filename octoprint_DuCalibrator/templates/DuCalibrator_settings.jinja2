@@ -1,23 +1,37 @@
+
 <form class="form-horizontal">
-    <div class="control-group">
-        <label class="control-label">{{ _('Firmware') }}</label>
-        <div class="controls">
-            <select class="form-control" data-bind="value: settings.Firmware">
-                <option>Marlin</option>
-                <option>Simulated</option>
-            </select>
+    <fieldset id="settings-machine">
+        <legend>{{ _('Machine settings') }}</legend>
+        <div class="control-group">
+            <label class="control-label" for="settings_Firmware">{{ _('Firmware') }}</label>
+            <div class="controls">
+                <div class="input-append">
+                    <select class="input" data-bind="value: settings.Firmware" id="settings_Firmware">
+                        <option>Marlin</option>
+                        <option>Simulated</option>
+                    </select>
+                </div>
+                <span class="help-inline">The machine type and firmware being used.</span>
+            </div>
         </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">{{ _('Init Commands') }}</label>
-        <div class="controls">
-            <textarea class="form-control" rows=5 data-bind="value: settings.InitCommands"> </textarea>
+        <div class="control-group">
+            <label class="control-label" for="settings_InitCommands">{{ _('Init Commands') }}</label>
+            <div class="controls">
+                <div class="input-append">
+                    <textarea class="input" rows=5 data-bind="value: settings.InitCommands" id="settings_InitCommands"> </textarea>
+                </div>
+                <span class="help-inline">Initialization commands to be send to the machine before every probe, at the very least homing command.</span>
+            </div>
+        </div>        
+        <div class="control-group">
+            <label class="control-label" for="settings_SafeHeight">{{ _('Safe Height') }}</label>
+            <div class="controls">
+                <div class="input-append">
+                    <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: settings.SafeHeight" id="settings_SafeHeight">
+                    <span class="add-on">mm</span>
+                </div>
+                <span class="help-inline">Safe height that we can travel from probe point to probe point without dragging the probe across the bed.</span>
+            </div>
         </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">{{ _('Safe Height mm') }}</label>
-        <div class="controls">
-            <input type="number" class="input-small" data-bind="value: settings.SafeHeight">
-        </div>
-    </div>
+    </fieldset>
 </form>

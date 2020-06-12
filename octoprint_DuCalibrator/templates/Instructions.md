@@ -16,3 +16,14 @@ Set the probing parameters.
 4. Apply
 5. Repeat from 2. until probed RMS stops converging
 6. Pick best probing(lowest RMS) from "Probing history" and Apply & Save it to your machine.
+
+# Tips
+
+* Start by running with the simulated printer first to see how things work, it won't send anything to your machine.
+* A repeatable probe is essential.
+* Repeatable endstops are very important, stepper phase homing is ideal. (I've recently added that to Marlin)
+* The bed must be very flat, borosilicate, or aluminumin with fused pcb, or pcb should work fine, magnet mats and textured covers may introduce too much fluctuation.
+* Tune down the max acceleration for best repeatability.
+* Some geometry factors may be dependent or correlated so they can't be calibrated together, the ui will try to enforce what is possible.
+* Not all firmware flavors support individual adjustment for arm lenghts and tower radius, some dont support automated setting of them and need to recompile.
+* More points will make calibration to offset probe noise and converge faster, 7 is too little, 50 is a good number, 500 things start to get slow, 5000 will take a while to complete and not be much better than 500.
