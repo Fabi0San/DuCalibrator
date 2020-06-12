@@ -1,12 +1,22 @@
-      <div class="control-group">
-          <label class="control-label">{{ _('Probing Radius') }} :</label>
-          <div class="input-append">
-              <input type="number" data-bind="value: probeRadius" step="1" class="input-small"/>
-          </div>
-      </div>
-      <div class="control-group">
-          <label class="control-label">{{ _('Probe points') }} :</label>
-          <div class="input-append">
-              <input type="number" data-bind="value: probePointCount" step="1" class="input-small"/>
-          </div>
-      </div>
+    <fieldset id="params-probing">
+        <legend>{{ _('Probing') }}</legend>
+        <div class="control-group">
+            <label class="control-label" for="params-probeRadius">{{ _('Probing Radius') }}</label>
+            <div class="controls">
+                <div class="input-append">
+                    <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: probeRadius" id="params-probeRadius">
+                    <span class="add-on">mm</span>
+                </div>
+                <span class="help-inline">Radius of the probed area, ideally as far as the machine can reach.</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="params-probePointCount">{{ _('Probe point count') }}</label>
+            <div class="controls">
+                <div class="input-append">
+                    <input type="number" step="any" min="20" class="input-mini text-right" data-bind="value: probePointCount" id="params-probePointCount">
+                </div>
+                <span class="help-inline">Number of probing points, the more the merrier, tune to your patience and CPU power.</span>
+            </div>
+        </div>        
+    </fieldset>

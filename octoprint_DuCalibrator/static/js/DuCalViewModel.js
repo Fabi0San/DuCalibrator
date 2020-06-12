@@ -129,7 +129,6 @@ class DuCalibratorViewModel {
 
         if (this.plotDivElement.firstChild)
             this.plotDivElement.removeChild(this.plotDivElement.firstChild);
-        //this.PlotControl.Hide();
     }
 
     resetCalibrationData() {
@@ -271,6 +270,10 @@ class DuCalibratorViewModel {
     {
         this.plot.probedParticles.visible = this.showProbedPoints();
         this.plot.correctedParticles.visible = this.showCalibratedPoints();
+
+        this.plot.probedParticles.material.size = this.showProbedPoints() && this.showCalibratedPoints() ? 3 : 5;
+        this.plot.probedParticles.material.needsUpdate = true;
+
         return true;
     }
 
