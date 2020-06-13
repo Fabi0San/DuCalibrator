@@ -93,6 +93,11 @@ class DuCalibratorViewModel {
     // events
     ReloadSettings()
     {
+        this.resetCalibrationData();
+        this.resetProbeData();
+        this.probedGeometries([]);
+        this.PlotControl.Hide();
+
         this.settings = this.settingsViewModel.settings.plugins.DuCalibrator;
         switch(this.settings.Firmware())
         {
@@ -104,8 +109,17 @@ class DuCalibratorViewModel {
                 break;
             case "Simulated":
                 {
-                    const testGeo = new DeltaGeometry(330.330, 165.165, 300.300, [0,1.1,5.2], [5.3,1.4,0], [400,400,400],[0,0,0],[1.5,0,5.6]);
-                    const initialGeo = new DeltaGeometry(340, 175, 302, [0,0,0], [0,0,0], [400,400,400]);
+                    const testGeo = new DeltaGeometry(330, 165, 300, [0,0,0], [0, 0, 0], [400,400,400]);
+                    const initialGeo = new DeltaGeometry(
+                        testGeo.DiagonalRod + (1 - Math.random() * 2),
+                        testGeo.Radius + (1 - Math.random() * 2),
+                        testGeo.Height,
+                        [testGeo.EndStopOffset[0] + Math.random(), testGeo.EndStopOffset[1] + Math.random(), testGeo.EndStopOffset[2] + Math.random()],
+                        [testGeo.TowerOffset[0] + (1 - Math.random() * 2), testGeo.TowerOffset[1] + (1 - Math.random() * 2), testGeo.TowerOffset[2] + (1 - Math.random() * 2)],
+                        testGeo.StepsPerUnit.slice(),
+                        testGeo.RadiusAdjust.slice(),
+                        [testGeo.DiagonalRodAdjust[0] + (1 - Math.random() * 2), testGeo.DiagonalRodAdjust[1] + (1 - Math.random() * 2), testGeo.DiagonalRodAdjust[2] + (1 - Math.random() * 2)]);
+                    initialGeo.Adjust([false],[0]);
 
                     this.machine(new TestMachine(this.settings, testGeo, initialGeo));
                     break;
@@ -128,7 +142,7 @@ class DuCalibratorViewModel {
         }
 
         if (this.plotDivElement.firstChild)
-            this.plotDivElement.removeChild(this.plotDivElement.firstChild);
+            this.plotDivElement.removeChild(this.plotDivElement.firstChild);        
     }
 
     resetCalibrationData() {
