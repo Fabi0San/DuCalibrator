@@ -1,5 +1,5 @@
 # Delta Micro Calibrator "ΔµCalibrator"
-## An [OctoPrint](https://octoprint.org/) Plugin for performing micro calibration for linear delta machines.
+An [OctoPrint](https://octoprint.org/) Plugin for performing micro calibration in linear delta machines.
 
 ## Key features:
 * Automatic probing
