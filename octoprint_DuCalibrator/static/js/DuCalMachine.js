@@ -268,6 +268,8 @@ class TestMachine extends AbstractMachine
         var carriagePositions;
         var actualPosition;
 
+        await new Promise(resolve => setTimeout(resolve, 1));
+
         // search a point on the current geometry that hit z0 on the actual geomety.
         do
         {
