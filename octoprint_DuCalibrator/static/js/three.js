@@ -1,7 +1,8 @@
+let THREE = {};
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(global = global || self, factory(global.THREE = {}));
+	(global = global || self, factory(THREE = {}));
 }(this, (function (exports) { 'use strict';
 
 	// Polyfills
