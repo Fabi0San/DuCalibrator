@@ -384,7 +384,7 @@ class AsyncRequestor {
         this.currentRequest = request;
         this.sendRequestFunction(request.query);
         if (request.timeout)
-            request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request, this);
+            request.timeoutHandle = setTimeout(this.Error, request.timeout, this, request, "Timeout");
         request.watchdogHandle = setInterval(this.Watchdog, 1000, request, this);
     }
 
@@ -397,19 +397,20 @@ class AsyncRequestor {
         this.TryDequeue();
     }
 
-    Timeout(request, self) {
+    Error(self, request, error) {
         if (self.currentRequest === request) {
             self.EndRequest();
-            request.reject(request.response);
+            request.reject(request.response + error);
         }
     }
 
-    Watchdog(request, self) {
+    Watchdog(request, self) 
+    {
         // are we still waiting on our request?
         if (self.currentRequest === request) 
             if(request.responseWatermark == request.response.length)
-                self.sendRequestFunction(`${self.cmdEcho} PING`);
-                else request.responseWatermark = request.response.length;
+                self.sendRequestFunction(`${self.cmdEcho} PING`).catch((ob, err) => self.Error(self, request, err));
+            else request.responseWatermark = request.response.length;
     }
 
 }

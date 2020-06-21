@@ -371,13 +371,22 @@ class DuCalibratorViewModel {
     async fetchGeometry() {
         this.isFetchingGeometry(true);
         this.resetProbeData();
-        var newGeometry = await this.machine().GetGeometry();
-
-        // this.currentGeometry(newGeometry);
-        this.resetCalibrationData();
-        this.GeometryControl.Show();
-        this.PlotControl.Hide();
-        this.isFetchingGeometry(false);
+        try
+        {
+            var newGeometry = await this.machine().GetGeometry();
+            this.GeometryControl.Show();
+        }
+        catch(err)
+        {
+            console.log(err);
+            this.ReloadSettings();
+        }
+        finally
+        {
+            this.resetCalibrationData();
+            this.PlotControl.Hide();
+            this.isFetchingGeometry(false);
+        }
     }
 
     async SaveGeometry(data) {
