@@ -303,12 +303,23 @@ class DuCalibratorViewModel {
     async ConfigureGeometry(geometry, save) 
     {
         this.isCalibrating(true);
-        await this.machine().SetGeometry(geometry, save);
-        this.GeometryControl.Show();
-        this.resetProbeData();
-        this.resetCalibrationData();
-        this.PlotControl.Hide();
-        this.isCalibrating(false);
+        try
+        {
+            await this.machine().SetGeometry(geometry, save);
+            this.GeometryControl.Show();
+        }
+        catch(err)
+        {
+            console.log(err);
+            this.ReloadSettings();
+        }
+        finally
+        {       
+            this.resetProbeData();
+            this.resetCalibrationData();
+            this.PlotControl.Hide();
+            this.isCalibrating(false);
+        }
     }
 
     async probeBed() 
@@ -347,11 +358,19 @@ class DuCalibratorViewModel {
                 return;
             }
 
-            const probe = await this.machine().ProbeBed(point[0],point[1]);
-            if(probe)
-                this.logProbePoint(probe[0], probe[1], probe[2]);
+            try
+            {            
+                const probe = await this.machine().ProbeBed(point[0],point[1]);
+                if(probe)
+                    this.logProbePoint(probe[0], probe[1], probe[2]);
             
-            this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
+                this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
+            }
+            catch(err)
+            {
+                console.log(err);
+                this.cancelProbingRequested=true;
+            }
         }
 
         this.probedGeometries.unshift({
