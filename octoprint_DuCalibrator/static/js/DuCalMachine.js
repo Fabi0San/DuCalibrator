@@ -103,6 +103,7 @@ class MarlinMachine extends RealMachine
             // endstop offset is added to the height, marlin reverses this for some reason.
             new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>-i), (geometry) => geometry.EndStopOffset.map(i=>-i)),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.DiagonalRodAdjust, (geometry, value) => geometry.DiagonalRodAdjust = value, (geometry) => geometry.DiagonalRodAdjust),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
@@ -126,6 +127,7 @@ class MarlinMachine extends RealMachine
             idsTowerAngleOffset: "XYZ",
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
+            DiagonalRodAdjust: "MNO",
         }
     }
 
