@@ -369,7 +369,11 @@ class DuCalibratorViewModel {
             catch(err)
             {
                 console.log(err);
-                this.cancelProbingRequested=true;
+                this.PlotControl.Hide();
+                this.isProbing(false);
+                this.cancelProbingRequested=false;
+                this.ReloadSettings();
+                return;                
             }
         }
 
