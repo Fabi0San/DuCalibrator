@@ -126,7 +126,10 @@ class DuCalibratorViewModel {
                 }
         }
         
-        this.machine().ParseData(this.latestData);
+        // Some versions of octoprint call onBeforeBind before fromHistoryData
+        if(this.latestData)
+            this.machine().ParseData(this.latestData);
+            
         this.GeometryControl.Hide();
     }
 
