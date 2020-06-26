@@ -126,7 +126,10 @@ class DuCalibratorViewModel {
                 }
         }
         
-        this.machine().ParseData(this.latestData);
+        // Some versions of octoprint call onBeforeBind before fromHistoryData
+        if(this.latestData)
+            this.machine().ParseData(this.latestData);
+            
         this.GeometryControl.Hide();
     }
 
@@ -303,12 +306,23 @@ class DuCalibratorViewModel {
     async ConfigureGeometry(geometry, save) 
     {
         this.isCalibrating(true);
-        await this.machine().SetGeometry(geometry, save);
-        this.GeometryControl.Show();
-        this.resetProbeData();
-        this.resetCalibrationData();
-        this.PlotControl.Hide();
-        this.isCalibrating(false);
+        try
+        {
+            await this.machine().SetGeometry(geometry, save);
+            this.GeometryControl.Show();
+        }
+        catch(err)
+        {
+            console.log(err);
+            this.ReloadSettings();
+        }
+        finally
+        {       
+            this.resetProbeData();
+            this.resetCalibrationData();
+            this.PlotControl.Hide();
+            this.isCalibrating(false);
+        }
     }
 
     async probeBed() 
@@ -347,11 +361,23 @@ class DuCalibratorViewModel {
                 return;
             }
 
-            const probe = await this.machine().ProbeBed(point[0],point[1]);
-            if(probe)
-                this.logProbePoint(probe[0], probe[1], probe[2]);
+            try
+            {            
+                const probe = await this.machine().ProbeBed(point[0],point[1]);
+                if(probe)
+                    this.logProbePoint(probe[0], probe[1], probe[2]);
             
-            this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
+                this.probingProgressString((this.ProbedData.peek().DataPoints.length/points.length*100).toFixed(0));
+            }
+            catch(err)
+            {
+                console.log(err);
+                this.PlotControl.Hide();
+                this.isProbing(false);
+                this.cancelProbingRequested=false;
+                this.ReloadSettings();
+                return;                
+            }
         }
 
         this.probedGeometries.unshift({
@@ -371,13 +397,22 @@ class DuCalibratorViewModel {
     async fetchGeometry() {
         this.isFetchingGeometry(true);
         this.resetProbeData();
-        var newGeometry = await this.machine().GetGeometry();
-
-        // this.currentGeometry(newGeometry);
-        this.resetCalibrationData();
-        this.GeometryControl.Show();
-        this.PlotControl.Hide();
-        this.isFetchingGeometry(false);
+        try
+        {
+            var newGeometry = await this.machine().GetGeometry();
+            this.GeometryControl.Show();
+        }
+        catch(err)
+        {
+            console.log(err);
+            this.ReloadSettings();
+        }
+        finally
+        {
+            this.resetCalibrationData();
+            this.PlotControl.Hide();
+            this.isFetchingGeometry(false);
+        }
     }
 
     async SaveGeometry(data) {

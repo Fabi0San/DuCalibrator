@@ -23,7 +23,7 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
         return dict(
             # put your plugin's default settings here
             Firmware="Simulated",
-            InitCommands="G28 ;home\nM204 T200 ;accel\nG0 F12000 ;speed",
+            InitCommands="G28 ;home\n;M204 T200 ;accel\n;G0 F12000 ;speed",
             SafeHeight="5"
         )
    
@@ -32,7 +32,7 @@ class DuCalibratorPlugin(octoprint.plugin.SettingsPlugin,
         # Define your plugin's asset files to automatically include in the
         # core UI here.
         return dict(
-            js=["js/DucalCommon.js","js/DuCalViewModel.js","js/DuCalGeometry.js", "js/DuCalMachine.js", "js/three.js","js/TrackballControls.js", "js/trilateration.js"],
+            js=["js/DuCalCommon.js","js/DuCalViewModel.js","js/DuCalGeometry.js", "js/DuCalMachine.js", "js/three.js","js/TrackballControls.js", "js/trilateration.js"],
             css=["css/DuCalibrator.css"],
             less=["less/DuCalibrator.less"]
         )

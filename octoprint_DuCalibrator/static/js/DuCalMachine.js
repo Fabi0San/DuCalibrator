@@ -103,6 +103,7 @@ class MarlinMachine extends RealMachine
             // endstop offset is added to the height, marlin reverses this for some reason.
             new GeometryElementParser(this.commands.EndStopOffset, this.commands.idsEndStopOffset, (geometry, value) => geometry.EndStopOffset = value.map(i=>-i), (geometry) => geometry.EndStopOffset.map(i=>-i)),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsTowerAngleOffset, (geometry, value) => geometry.TowerOffset = value, (geometry) => geometry.TowerOffset),
+            new GeometryElementParser(this.commands.DeltaConfig, this.commands.DiagonalRodAdjust, (geometry, value) => geometry.DiagonalRodAdjust = value, (geometry) => geometry.DiagonalRodAdjust),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[0], (geometry, value) => geometry.Radius = value, (geometry) => geometry.Radius),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[1], (geometry, value) => geometry.Height = value, (geometry) => geometry.Height),
             new GeometryElementParser(this.commands.DeltaConfig, this.commands.idsRadiusHeightRod[2], (geometry, value) => geometry.DiagonalRod = value, (geometry) => geometry.DiagonalRod),
@@ -126,6 +127,7 @@ class MarlinMachine extends RealMachine
             idsTowerAngleOffset: "XYZ",
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
+            DiagonalRodAdjust: "MNO",
         }
     }
 
@@ -384,7 +386,7 @@ class AsyncRequestor {
         this.currentRequest = request;
         this.sendRequestFunction(request.query);
         if (request.timeout)
-            request.timeoutHandle = setTimeout(this.Timeout, request.timeout, request, this);
+            request.timeoutHandle = setTimeout(this.Error, request.timeout, this, request, "Timeout");
         request.watchdogHandle = setInterval(this.Watchdog, 1000, request, this);
     }
 
@@ -397,19 +399,20 @@ class AsyncRequestor {
         this.TryDequeue();
     }
 
-    Timeout(request, self) {
+    Error(self, request, error) {
         if (self.currentRequest === request) {
             self.EndRequest();
-            request.reject(request.response);
+            request.reject(request.response + error);
         }
     }
 
-    Watchdog(request, self) {
+    Watchdog(request, self) 
+    {
         // are we still waiting on our request?
         if (self.currentRequest === request) 
             if(request.responseWatermark == request.response.length)
-                self.sendRequestFunction(`${self.cmdEcho} PING`);
-                else request.responseWatermark = request.response.length;
+                self.sendRequestFunction(`${self.cmdEcho} PING`).catch((ob, err) => self.Error(self, request, err));
+            else request.responseWatermark = request.response.length;
     }
 
 }
