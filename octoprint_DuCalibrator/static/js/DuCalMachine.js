@@ -127,7 +127,7 @@ class MarlinMachine extends RealMachine
             idsTowerAngleOffset: "XYZ",
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
-            DiagonalRodAdjust: "MNO",
+            DiagonalRodAdjust: "ABC",
         }
     }
 
