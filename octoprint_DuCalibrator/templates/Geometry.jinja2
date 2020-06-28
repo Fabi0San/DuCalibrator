@@ -1,9 +1,11 @@
+    <div class="row-fluid">
       <h4>
-        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isFetchingGeometry()"></i><a href="#collapseGeometry" id="collapseGeometryControl" data-toggle="collapse" class="collapsed" data-bind="visible: machine().Geometry()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isFetchingGeometry()"></i>
+        <span data-bind="template: { name: 'CollapseTemplate', if: machine().Geometry() , data: GeometryControl }"></span>
         {{ _('Current Geometry') }}
         <button class="btn btn-primary pull-right" data-bind="click: fetchGeometry, enable: isReadyForCommands()" title="{{ _('Reads the current geometry from the machine.') }}">{{ _('Fetch Geometry') }}</button>
       </h4>
-      <div class="row-fluid collapse" data-bind="" id="collapseGeometry">
+      <div class="row-fluid" data-bind="visible: GeometryControl.Visible">
         <div class="row-fluid">
           <div class="span3">
             <H5>Parameter</H5>
@@ -63,3 +65,4 @@
           <div class="span2" data-bind="text: machine().Geometry()?.RadiusAdjust[2].toFixed(4)"></div>
         </div>
       </div>
+    </div>
