@@ -213,14 +213,14 @@ class DuCalibratorViewModel {
 
         var geometry = new THREE.BufferGeometry();
         var vertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
-        geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
         var probedParticles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff0000, size: 5, sizeAttenuation: true, transparent: true, opacity: 1 }));
         probedParticles.geometry.setDrawRange(0, 0);
         scene.add(probedParticles);
 
         var correctedGeometry = new THREE.BufferGeometry();
         var correctedVertices = new Float32Array(probeCount * 3).fill(0); // x,y,z
-        correctedGeometry.addAttribute('position', new THREE.BufferAttribute(correctedVertices, 3));
+        correctedGeometry.setAttribute('position', new THREE.BufferAttribute(correctedVertices, 3));
         var correctedParticles = new THREE.Points(correctedGeometry, new THREE.PointsMaterial({ color: 0x00bb00, size: 5, sizeAttenuation: true }));
         correctedParticles.geometry.setDrawRange(0, 0);
         scene.add(correctedParticles);
@@ -363,7 +363,7 @@ class DuCalibratorViewModel {
 
             try
             {            
-                const probe = await this.machine().ProbeBed(point[0],point[1]);
+                const probe = await this.machine().ProbeBed(point[0],point[1], point === points[points.length-1]);
                 if(probe)
                     this.logProbePoint(probe[0], probe[1], probe[2]);
             

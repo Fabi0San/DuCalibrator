@@ -131,14 +131,14 @@ class MarlinMachine extends RealMachine
         }
     }
 
-    async ProbeBed(x, y) 
+    async ProbeBed(x, y, retract) 
     {
         this.IsBusy(true);
 
         const commands = [
             `${this.commands.Move} Z${this.settings.SafeHeight()}`, // safe height
             `${this.commands.Move} X${x.toFixed(5)} Y${y.toFixed(5)}`, // position
-            `${this.commands.ProbeBed}` // probe
+            `${this.commands.ProbeBed} E${retract ? 1 : 0}` // probe
         ];
 
         const response = await this.comms.Execute(commands);
