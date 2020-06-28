@@ -21,7 +21,7 @@ Set the probing parameters.
 
 * Start by running with the simulated printer first to see how things work, it won't send anything to your machine.
 * A repeatable probe is essential.
-* Repeatable end stops are very important, stepper phase homing is ideal. (I've recently added that to Marlin)
+* Repeatable end stops are very important, stepper phase homing is ideal. (I've recently added that to Marlin, look for TMC_HOME_PHASE)
 * The bed must be very flat, borosilicate, or aluminum with fused pcb, or pcb should work fine, magnet mats and textured covers may introduce too much fluctuation.
 * Tune down the max acceleration for best repeatability.
 * Some geometry factors may be dependent or correlated so they can't be calibrated together, the ui will try to enforce what is possible.

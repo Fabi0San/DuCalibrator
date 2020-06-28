@@ -85,27 +85,21 @@ class ProbePoint
 }
 
 class CollapseControl {
-    constructor(id) {
-        //this.controlElement = $(id);
-        //this.controlElement.collapse();
-        this.name=id;
-        this.visible = ko.observable(false);
+    constructor() {
+        this.Visible = ko.observable(false);
     }
 
-    IsCollapsed() {
-        return this.controlElement.classList.contains("collapsed");
-    }
-
-    Toggle(self, c) {
-        self.visible(!self.visible());
+    get IsHidden()
+    {
+        return !this.Visible();
     }
 
     Hide() {
-        this.visible(false);
+        this.Visible(false);
     }
 
     Show() {
-        this.visible(true);
+        this.Visible(true);
     }
 }
 

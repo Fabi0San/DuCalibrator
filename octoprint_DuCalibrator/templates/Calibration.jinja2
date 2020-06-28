@@ -10,11 +10,12 @@
       
       <div class="row-fluid">
         <h4>
-          <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isCalibrating()"></i><a href="#collapseCalibration" id="collapseCalibrationControl"  data-toggle="collapse" class="collapsed" data-bind="visible: isReadyToCalibrate()"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
-          {{ _('Calibration') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:CalibratedData , data: CalibratedData }"></span>
+          <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isCalibrating()"></i>
+          <span data-bind="template: { name: 'CollapseTemplate', if: CalibratedData, data: CalibrationControl }"></span>
+          {{ _('Calibration') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:CalibratedData, data: CalibratedData }"></span>
           <button class="btn btn-primary pull-right" data-bind="click: applyCalibration, enable: isReadyToCalibrate()" title="{{ _('Configure the machine with the calibrated geometry.') }}">{{ _('Apply') }}</button>
         </h4>
-        <div class="row-fluid collapse" id="collapseCalibration">
+        <div class="row-fluid" data-bind="visible: CalibrationControl.Visible">
           <div class="row-fluid">
             <div class="span4">
               <H5>Parameter</H5>

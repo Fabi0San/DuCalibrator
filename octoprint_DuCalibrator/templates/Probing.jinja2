@@ -1,3 +1,4 @@
+    <div class="row-fluid">
       <script type="text/html" id="ProbingDataTemplate">
         <span data-bind="visible: RMS">
           {{ _('RMS') }}: <span data-bind="text: RMS.toFixed(3)"></span>
@@ -6,12 +7,12 @@
         </span>
       </script>
       <h4>
-        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isProbing()"></i><a href="#collapsePlot" id="collapsePlotControl"  data-toggle="collapse" class="collapsed" data-bind="visible: ProbedData().RMS"><i class="fa fa-caret-right fa-lg"></i><i class="fa fa-caret-down fa-lg"></i></a>
+        <i class="fa fa-cog fa-lg fa-spin" data-bind="visible: isProbing()"></i><span data-bind="template: { name: 'CollapseTemplate', if: ProbedData().RMS, data: PlotControl }"></span>
         {{ _('Probing') }} <span data-bind="template: { name: 'ProbingDataTemplate', if:ProbedData().RMS , data: ProbedData }"></span>
         <button class="btn btn-primary pull-right" data-bind="click: probeBed, visible: !isProbing(), enable: isReadyForCommands() && isGeometryKnown()">{{ _('Probe bed') }}</button>
         <button class="btn btn-danger pull-right" data-bind="click: cancelProbing, visible: isProbing()"><i class="fa fa-stop"></i> {{ _('Cancel') }}</button>
       </h4>
-      <div class="row-fluid collapse" id="collapsePlot">
+      <div class="row-fluid" data-bind="visible: PlotControl.Visible">
 
         <div class="progress progress-text-centered" style="position: relative;">
           <div class="bar" id="duc_progressBar" data-bind="style: {width: probingProgressString() + '%'}" style="width: 0%;">
@@ -36,3 +37,4 @@
           </div>
         </div>
       </div>
+    </div>

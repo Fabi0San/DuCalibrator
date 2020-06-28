@@ -37,9 +37,10 @@ class DuCalibratorViewModel {
         this.isReadyToCalibrate = ko.observable(false);
 
         this.plotDivElement = $("#surfacePlotDiv")[0];
-        this.GeometryControl = new CollapseControl("#collapseGeometryControld");
-        this.PlotControl = new CollapseControl("#collapsePlotControld");
-        this.CalibrationControl = new CollapseControl("#collapseCalibrationControld");
+        this.GeometryControl = new CollapseControl();
+        this.PlotControl = new CollapseControl();
+        this.CalibrationControl = new CollapseControl();
+        this.HistoryControl = new CollapseControl();
 
         // Observable data
         this.currentGeometry = ()=>this.machine()?.Geometry();
@@ -340,13 +341,12 @@ class DuCalibratorViewModel {
             zScale: 1,
             normalizeTo: radius / 3
         };
-
+        
+        this.PlotControl.Show();
         this.plot = this.preparePlot(
             this.plotDivElement,
             radius,
             this.probePointCount());
-
-        this.PlotControl.Show();
 
         var points = DuCalUtils.GetSpiralPoints(this.probePointCount(), this.probeRadius());
         for(const point of points)
