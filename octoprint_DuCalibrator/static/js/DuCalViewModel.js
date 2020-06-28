@@ -37,9 +37,9 @@ class DuCalibratorViewModel {
         this.isReadyToCalibrate = ko.observable(false);
 
         this.plotDivElement = $("#surfacePlotDiv")[0];
-        this.GeometryControl = new CollapseControl("#collapseGeometryControl");
-        this.PlotControl = new CollapseControl("#collapsePlotControl");
-        this.CalibrationControl = new CollapseControl("#collapseCalibrationControl");
+        this.GeometryControl = new CollapseControl("#collapseGeometryControld");
+        this.PlotControl = new CollapseControl("#collapsePlotControld");
+        this.CalibrationControl = new CollapseControl("#collapseCalibrationControld");
 
         // Observable data
         this.currentGeometry = ()=>this.machine()?.Geometry();
