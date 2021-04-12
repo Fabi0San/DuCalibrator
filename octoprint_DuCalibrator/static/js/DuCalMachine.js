@@ -88,6 +88,134 @@ class RealMachine extends AbstractMachine
     }
 }
 
+class KlipperMachine extends RealMachine
+{
+    constructor(settings)
+    {
+        super(settings);
+    } 
+
+    BuildGeometryParsers()
+    {
+        this.geometryElementParsers = [];
+    }
+
+    PopulateCommands()
+    {
+        this.commands = 
+        {
+            Init: this.settings.InitCommands().split("\n"),
+            Echo: "M118",
+            Move: "G0",
+            ProbeBed: "PROBE",
+            FetchSettings: "DELTA_GET_CALIBRATION",
+            SaveSettings: "SAVE_CONFIG",
+            DeltaConfig: "DELTA_SET_CALIBRATION",
+        }
+    }
+
+    async GetGeometry()
+    {        
+        this.IsBusy(true);
+
+        if(!this.Geometry())
+        {
+            await this.Init();
+        }
+
+        const response = await this.comms.Execute(this.commands.FetchSettings);
+
+        var newGeometry = this.Geometry() ?? new DeltaGeometry() ;
+
+
+        // DELTA_CALIBRATION: RADIUS=167.376400 ENDSTOP_HEIGHTS=287.955417,288.657757,288.602187 TOWER_ANGLES=210.000000,330.599800,90.377900 ARM_LENGTHS=329.081800,330.115200,330.115200 STEP_DISTANCES=0.002498,0.002498,0.002495        //
+        const geometryRegex = /DELTA_CALIBRATION: RADIUS=(-?\d+\.?\d*) ENDSTOP_HEIGHTS=(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*) TOWER_ANGLES=(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*) ARM_LENGTHS=(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*) STEP_DISTANCES=(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*)/;
+        var match;
+        var result = undefined;
+
+        for (var i = 0; i < response.length; i++)
+        {
+            if (match = geometryRegex.exec(response[i]))
+            {
+                newGeometry.Radius = parseFloat(match[1]);
+                newGeometry.EndStopOffset = [parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4])];
+                newGeometry.TowerOffset = [parseFloat(match[5]-210.0), parseFloat(match[6]-330.0), parseFloat(match[7]-90.0)];
+                newGeometry.DiagonalRodAdjust = [parseFloat(match[8]), parseFloat(match[9]), parseFloat(match[10])];
+                newGeometry.StepsPerUnit = [1.0/parseFloat(match[11]), 1.0/parseFloat(match[12]), 1.0/parseFloat(match[13])];
+
+                newGeometry.Height = Math.min.apply(null, newGeometry.EndStopOffset);
+                newGeometry.EndStopOffset = newGeometry.EndStopOffset.map(eso => eso - newGeometry.Height);
+
+                newGeometry.DiagonalRod = Math.min.apply(null, newGeometry.DiagonalRodAdjust);
+                newGeometry.DiagonalRodAdjust = newGeometry.DiagonalRodAdjust.map(dra => dra - newGeometry.DiagonalRod);                
+                break;
+            }
+        }
+
+        this.Geometry(newGeometry);
+        this.IsBusy(false);
+        return newGeometry;
+    }
+
+    async SetGeometry(geometry, save)
+    {
+        this.IsBusy(true);
+
+        // DELTA_SET_CALIBRATION RADIUS=167.376400 ENDSTOP_HEIGHTS=287.955417,288.657757,288.602187 TOWER_ANGLES=210.000000,330.599800,90.377900 ARM_LENGTHS=329.081800,330.115200,330.115200 STEP_DISTANCES=0.002498,0.002498,0.002495
+
+        var endStopHeights = geometry.EndStopOffset.map(i=>(i+geometry.Height));
+        var armLengths = geometry.DiagonalRodAdjust.map(i=>(i+geometry.DiagonalRod));
+        var towerAngles = [210+geometry.TowerOffset[0], 330+geometry.TowerOffset[1], 90+geometry.TowerOffset[2]];
+        var stepDistances = geometry.StepsPerUnit.map(i=>(1.0/i));
+
+
+        const commands = [
+            `${this.commands.DeltaConfig} RADIUS=${geometry.Radius.toFixed(6)}`+
+                ` ENDSTOP_HEIGHTS=${endStopHeights.map(i=>i.toFixed(6)).join(",")}`+
+                ` TOWER_ANGLES=${towerAngles.map(i=>i.toFixed(6)).join(",")}`+
+                ` ARM_LENGTHS=${armLengths.map(i=>i.toFixed(6)).join(",")}`+
+                ` STEP_DISTANCES=${stepDistances.map(i=>i.toFixed(6)).join(",")}`              
+        ];
+
+        await this.comms.Execute(commands);
+        await this.comms.Execute(this.commands.SaveSettings);
+        await this.Init();
+        const result = await this.GetGeometry();
+        this.IsBusy(false);
+        return result;
+    }
+
+    async ProbeBed(x, y, retract) 
+    {
+        this.IsBusy(true);
+
+        const commands = [
+            `${this.commands.Move} Z${this.settings.SafeHeight()}`, // safe height
+            `${this.commands.Move} X${x.toFixed(6)} Y${y.toFixed(6)}`, // position
+            `${this.commands.ProbeBed}` // probe
+        ];
+
+        const response = await this.comms.Execute(commands);
+
+        const probePointRegex = /probe at (-?\d+\.?\d*),(-?\d+\.?\d*) is z=(-?\d+\.?\d*)/;
+        var match;
+        var result = undefined;
+
+        for (var i = 0; i < response.length; i++)
+        {
+            if (match = probePointRegex.exec(response[i]))
+            {
+                result = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])];
+                break;
+            }
+        }
+
+        this.IsBusy(false);
+        return result;
+    }
+}
+
+
 class MarlinMachine extends RealMachine
 {
     constructor(settings)
@@ -349,7 +477,7 @@ class AsyncRequestor {
     Execute(query)
     {
         const doneString = `DONE_${this.lastRequestId++}`;
-        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(Infinity), (str) => str.includes(`Recv: ${doneString}`));
+        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(Infinity), (str) => str.includes(`Recv: echo: ${doneString}`));
     }
 
     Query(query, isFinished, timeout) {

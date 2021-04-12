@@ -105,6 +105,9 @@ class DuCalibratorViewModel {
             case "Marlin":
                 this.machine(new MarlinMachine(this.settings));
                 break;
+            case "Klipper":
+                this.machine(new KlipperMachine(this.settings));
+                break;
             case "Smoothie":
                 this.machine(new SmoothieMachine(this.settings));
                 break;
