@@ -38,7 +38,7 @@ class RealMachine extends AbstractMachine
     {
         super(settings);
         this.PopulateCommands();
-        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req), this.commands.Echo);
+        this.comms = new AsyncRequestor(req => OctoPrint.control.sendGcode(req), this.commands.Echo, this.commands.EchoPrefix);
         this.BuildGeometryParsers();
     } 
     
@@ -111,6 +111,7 @@ class KlipperMachine extends RealMachine
             FetchSettings: "DELTA_GET_CALIBRATION",
             SaveSettings: "SAVE_CONFIG",
             DeltaConfig: "DELTA_SET_CALIBRATION",
+            EchoPrefix: "Recv: echo: ",
         }
     }
 
@@ -165,20 +166,21 @@ class KlipperMachine extends RealMachine
 
         var endStopHeights = geometry.EndStopOffset.map(i=>(i+geometry.Height));
         var armLengths = geometry.DiagonalRodAdjust.map(i=>(i+geometry.DiagonalRod));
-        var towerAngles = [210+geometry.TowerOffset[0], 330+geometry.TowerOffset[1], 90+geometry.TowerOffset[2]];
+        var towerAngles = [210.0+geometry.TowerOffset[0], 330.0+geometry.TowerOffset[1], 90.0+geometry.TowerOffset[2]];
         var stepDistances = geometry.StepsPerUnit.map(i=>(1.0/i));
 
 
         const commands = [
+            this.commands.Init,
             `${this.commands.DeltaConfig} RADIUS=${geometry.Radius.toFixed(6)}`+
                 ` ENDSTOP_HEIGHTS=${endStopHeights.map(i=>i.toFixed(6)).join(",")}`+
                 ` TOWER_ANGLES=${towerAngles.map(i=>i.toFixed(6)).join(",")}`+
                 ` ARM_LENGTHS=${armLengths.map(i=>i.toFixed(6)).join(",")}`+
-                ` STEP_DISTANCES=${stepDistances.map(i=>i.toFixed(6)).join(",")}`              
+                ` STEP_DISTANCES=${stepDistances.map(i=>i.toFixed(9)).join(",")}`              
         ];
 
         await this.comms.Execute(commands);
-        await this.comms.Execute(this.commands.SaveSettings);
+        await this.comms.Execute(this.commands.SaveSettings, "Recv: // Klipper state: Ready");
         await this.Init();
         const result = await this.GetGeometry();
         this.IsBusy(false);
@@ -256,6 +258,7 @@ class MarlinMachine extends RealMachine
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
             DiagonalRodAdjust: "ABC",
+            EchoPrefix: "Recv: ",
         }
     }
 
@@ -326,7 +329,8 @@ class SmoothieMachine extends RealMachine
             idsTowerAngleOffset: "DEH",
             idsEndStopOffset: "XYZ",         
             idsStepsPerUnit: "XYZ",
-            idsRadiusOffset: "ABC"
+            idsRadiusOffset: "ABC",
+            EchoPrefix: "Recv: ",
         }
     }
 
@@ -466,18 +470,27 @@ class GeometryElementParser {
 }
 
 class AsyncRequestor {
-    constructor(sendRequestFunction, cmdEcho) {
+    constructor(sendRequestFunction, cmdEcho, echoPrefix) {
         this.requestQueue = [];
         this.currentRequest = null;
         this.sendRequestFunction = sendRequestFunction;
         this.lastRequestId = 0;
         this.cmdEcho = cmdEcho
+        this.echoPrefix = echoPrefix
     }
 
-    Execute(query)
+    Execute(query, endMarker = null)
     {
-        const doneString = `DONE_${this.lastRequestId++}`;
-        return this.Query([query, `${this.cmdEcho} ${doneString}`].flat(Infinity), (str) => str.includes(`Recv: echo: ${doneString}`));
+        var doneString;
+        var commands = [query];
+        if(endMarker == null)
+        {
+            doneString = `DONE_${this.lastRequestId++}`;
+            commands = commands.concat(`${this.cmdEcho} ${doneString}`);
+            endMarker = `${this.echoPrefix}${doneString}`;
+        }
+
+        return this.Query(commands.flat(Infinity), (str) => str.includes(endMarker));
     }
 
     Query(query, isFinished, timeout) {
